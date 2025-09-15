@@ -1,0 +1,130 @@
+.services-container {
+  padding: 40px;
+  background: linear-gradient(135deg, #f7fafc, #e2e8f0);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  overflow-x: hidden;
+}
+
+.services-title {
+  color: #2c5282;
+  margin-bottom: 20px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.services-back, .services-forward {
+  margin: 10px 0;
+  padding: 10px 25px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.services-back {
+  background-color: #4a90e2;
+  color: #ffffff;
+}
+
+.services-back:hover {
+  background-color: #357abd;
+  transform: translateY(-2px);
+}
+
+.services-forward {
+  background-color: #4a90e2;
+  color: #ffffff;
+}
+
+.services-forward:hover {
+  background-color: #357abd;
+  transform: translateY(-2px);
+}
+
+.services-add, .services-filter {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.services-add .MuiTextField-root, .services-filter .MuiTextField-root {
+  background-color: #f7fafc;
+  border-radius: 8px;
+}
+
+.services-add-button {
+  background-color: #4a90e2;
+  color: #ffffff;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.services-add-button:hover {
+  background-color: #357abd;
+  transform: translateY(-2px);
+}
+
+.services-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.service-item {
+  padding: 0;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.MuiCard-root {
+  border-radius: 15px !important;
+}
+
+.MuiCardContent-root {
+  padding: 20px;
+}
+
+.MuiCardActions-root {
+  padding: 10px 20px;
+  background-color: #f7fafc;
+}
+
+.MuiIconButton-root:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.MuiPaginationItem-root {
+  color: #4a90e2 !important;
+}
+
+@media (max-width: 600px) {
+  .services-title {
+    font-size: 1.8rem;
+  }
+  .services-add, .services-filter {
+    padding: 15px;
+  }
+  .services-list {
+    grid-template-columns: 1fr;
+  }
+}

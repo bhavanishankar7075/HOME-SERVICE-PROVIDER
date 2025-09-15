@@ -1,0 +1,58 @@
+.MuiCard-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+  transition: all 0.3s ease;
+  border: 1px solid #E5E7EB;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.MuiCardContent-root {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.MuiCardActions-root {
+  justify-content: space-between;
+  padding: 16px !important;
+  background-color: #F9FAFB;
+}
+
+.MuiChip-root {
+  transition: all 0.3s ease;
+}
+
+.MuiChip-root:hover {
+  transform: translateY(-2px);
+}
+
+.MuiDialogContent-root {
+  overflow-y: hidden !important;
+}
+
+@media (max-width: 600px) {
+  .MuiTypography-h4 { font-size: 1.25rem !important; }
+  .MuiTypography-h6 { font-size: 1rem !important; }
+  .MuiTypography-body1 { font-size: 0.85rem !important; }
+  .MuiTypography-body2 { font-size: 0.75rem !important; }
+  .MuiGrid-container { gap: 1rem !important; }
+  .MuiContainer-root { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .MuiButton-root { font-size: 0.75rem !important; padding: 6px 12px !important; }
+  .MuiCardMedia-root { height: 150px !important; }
+  .MuiChip-root { font-size: 0.75rem !important; padding: 8px !important; }
+}
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .MuiTypography-h4 { font-size: 1.5rem !important; }
+  .MuiTypography-h6 { font-size: 1rem !important; }
+  .MuiGrid-grid-md-4 { flex: 0 0 50% !important; max-width: 50% !important; }
+  .MuiGrid-grid-md-3 { flex: 0 0 50% !important; max-width: 50% !important; }
+  .MuiGrid-grid-md-2 { flex: 0 0 33.33% !important; max-width: 33.33% !important; }
+  .MuiCardMedia-root { height: 180px !important; }
+}

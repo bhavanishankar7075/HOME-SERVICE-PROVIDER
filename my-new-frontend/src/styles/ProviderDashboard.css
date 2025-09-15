@@ -1,0 +1,115 @@
+/* src/styles/ProviderDashboard.css */
+.provider-dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+  padding: 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.provider-dashboard-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.provider-dashboard-title:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.provider-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.provider-card:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+}
+
+.provider-button {
+  background: #3498db;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.provider-button:hover {
+  background: #2980b9;
+  transform: scale(1.05);
+}
+
+.provider-button:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.tab-container {
+  background: #ffffff;
+  padding: 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tab-item {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #34495e;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.tab-item:hover {
+  color: #2980b9;
+}
+
+.MuiTabs-indicator {
+  background-color: #3498db !important;
+  height: 4px !important;
+}
+
+.profile-image {
+  border: 3px solid #3498db;
+  transition: all 0.3s ease;
+}
+
+.profile-image:hover {
+  border-color: #2980b9;
+  transform: rotate(5deg);
+}
+
+@media (max-width: 768px) {
+  .provider-dashboard-container {
+    padding: 1rem;
+  }
+
+  .provider-dashboard-title {
+    font-size: 1.8rem;
+    padding: 1rem;
+  }
+
+  .provider-card {
+    padding: 1rem;
+  }
+
+  .provider-button {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}

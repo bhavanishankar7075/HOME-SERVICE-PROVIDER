@@ -1,0 +1,116 @@
+/* ==========================================================================
+   1. Main Page Container
+   ========================================================================== */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  /* Using a more subtle and modern gradient */
+  background: linear-gradient(135deg, #4c669f, #3b5998, #192f6a);
+  padding: 1rem;
+}
+
+/* ==========================================================================
+   2. Login Card Styling
+   ========================================================================== */
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+
+.login-title {
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+/* ==========================================================================
+   3. Form Layout & Styling
+   ========================================================================== */
+/* Use Flexbox for clean spacing */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* Replaces individual margins for consistent spacing */
+}
+
+/* Custom styling for Material-UI TextFields in a dark theme context */
+.login-form .MuiTextField-root .MuiOutlinedInput-root {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+.login-form .MuiTextField-root .MuiOutlinedInput-root fieldset {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.login-form .MuiTextField-root .MuiOutlinedInput-root:hover fieldset {
+  border-color: #03a9f4; /* Using an accent color from previous theme */
+}
+.login-form .MuiTextField-root .MuiInputLabel-root {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.login-button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #03a9f4;
+  border-radius: 8px;
+  transition: background-color 0.3s, transform 0.2s;
+  border: none;
+}
+
+.login-button:hover {
+  background-color: #0276aa;
+  transform: translateY(-3px);
+}
+
+.login-button:disabled {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.login-error {
+  margin: 0; /* Margin is handled by the form's gap */
+}
+
+/* ==========================================================================
+   4. Links & Other Elements
+   ========================================================================== */
+.login-link-container {
+  margin-top: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.login-link {
+  color: #03a9f4;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   5. Responsive Design
+   ========================================================================== */
+@media (max-width: 600px) {
+  .login-card {
+    padding: 1.5rem;
+  }
+  .login-title {
+    font-size: 1.75rem;
+  }
+}

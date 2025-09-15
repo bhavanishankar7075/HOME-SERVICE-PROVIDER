@@ -1,0 +1,66 @@
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 20s linear infinite;
+}
+
+/* Hover effects */
+.MuiPaper-root:hover {
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+
+.MuiButton-root.category-button.active {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.faq-item:hover {
+  transform: translateX(8px);
+  transition: all 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .MuiTypography-h1 { font-size: 2rem !important; }
+  .MuiTypography-h4 { font-size: 1.5rem !important; }
+  .MuiTypography-h5 { font-size: 1rem !important; }
+  .MuiTypography-body1 { font-size: 0.875rem !important; }
+  .MuiGrid-container { gap: 1rem !important; }
+  .MuiContainer-root { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .announcement-list .MuiTypography-root { margin-left: 1rem !important; margin-right: 1rem !important; font-size: 0.75rem !important; }
+  .category-button { font-size: 0.75rem !important; padding: 0.5rem !important; }
+}
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .MuiTypography-h1 { font-size: 3rem !important; }
+  .MuiTypography-h4 { font-size: 1.75rem !important; }
+  .MuiGrid-grid-md-4 { flex: 0 0 50% !important; max-width: 50% !important; }
+  .MuiGrid-grid-md-2 { flex: 0 0 33.33% !important; max-width: 33.33% !important; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+/* Add this to your main CSS file (e.g., Home.css or App.css) */
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* This is likely already in your CSS file for the announcement bar */
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}

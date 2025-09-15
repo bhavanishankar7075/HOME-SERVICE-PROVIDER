@@ -1,0 +1,79 @@
+.dashboard-container {
+  padding: 32px;
+  background: linear-gradient(135deg, #e6f0fa, #f4f6f8);
+  min-height: 100vh;
+}
+
+.dashboard-title {
+  color: #1a3c34;
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: 700;
+  font-size: 2.5rem;
+}
+
+.stat-card {
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.stat-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.dashboard-buttons {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-button {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
+  background-color: #4a90e2;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.dashboard-button:hover {
+  background-color: #357abd;
+  transform: translateY(-4px);
+}
+
+.chart-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .dashboard-title {
+    font-size: 2rem;
+  }
+
+  .stat-card {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-button {
+    margin-bottom: 12px;
+    font-size: 1rem;
+  }
+
+  .chart-container {
+    padding: 16px;
+  }
+}
