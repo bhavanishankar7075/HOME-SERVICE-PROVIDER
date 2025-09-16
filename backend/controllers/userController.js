@@ -7,6 +7,555 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 
 const storage = multer.diskStorage({
+  destination: './uploads/',
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+const convertToCity = async (location) => {
+  if (!location || typeof location !== 'string') {
+    return {
+      fullAddress: '',
+      details: {
+        streetNumber: '',
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: ''
+      }
+    };
+  }
+  const [lat, lng] = location.split(',').map(Number);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=street_address|locality&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      );
+      if (response.data.status === 'OK' && response.data.results.length > 0) {
+        const address = response.data.results.find(result => result.types.includes('street_address'))
+          || response.data.results.find(result => result.types.includes('locality'))
+          || response.data.results[0];
+        const components = address.address_components || [];
+        const details = {
+          streetNumber: components.find(c => c.types.includes('street_number'))?.long_name || '',
+          street: components.find(c => c.types.includes('route'))?.long_name || '',
+          city: components.find(c => c.types.includes('locality'))?.long_name || '',
+          state: components.find(c => c.types.includes('administrative_area_level_1'))?.long_name || '',
+          country: components.find(c => c.types.includes('country'))?.long_name || '',
+          postalCode: components.find(c => c.types.includes('postal_code'))?.long_name || ''
+        };
+        console.log('Converted location:', { fullAddress: address.formatted_address, details });
+        return {
+          fullAddress: address.formatted_address || '',
+          details
+        };
+      }
+      return {
+        fullAddress: location,
+        details: {
+          streetNumber: '',
+          street: '',
+          city: '',
+          state: '',
+          country: '',
+          postalCode: ''
+        }
+      };
+    } catch (error) {
+      console.error('Geocoding error:', error.message);
+      return {
+        fullAddress: location,
+        details: {
+          streetNumber: '',
+          street: '',
+          city: '',
+          state: '',
+          country: '',
+          postalCode: ''
+        }
+      };
+    }
+  }
+  return {
+    fullAddress: location,
+    details: {
+      streetNumber: '',
+      street: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: ''
+    }
+  };
+};
+
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  console.log('Profile Fetched:', {
+    userId: user._id,
+    name: user.name,
+    profileExists: !!user.profile,
+    profileImage: user.profile?.image || '/images/default-user.png',
+    appointments: user.profile.appointments.length
+  });
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    profile: user.profile || {
+      image: '/images/default-user.png',
+      location: { fullAddress: '', details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' } },
+      skills: [],
+      availability: 'Unavailable',
+      status: 'active',
+      feedback: [],
+      bookedServices: [],
+      appointments: []
+    }
+  });
+});
+
+const updateProfile = [
+  upload.single('profileImage'),
+  asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const name = req.body.name ? req.body.name.trim() : currentUser.name;
+    const phone = req.body.phone || currentUser.phone;
+    let locationInput = req.body.location ? JSON.parse(req.body.location) : currentUser.profile?.location;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    let location = currentUser.profile?.location || {
+      fullAddress: '',
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' }
+    };
+    if (locationInput) {
+      console.log('Location input:', locationInput);
+      if (typeof locationInput === 'string') {
+        location = await convertToCity(locationInput);
+      } else if (locationInput.fullAddress && typeof locationInput.fullAddress === 'string') {
+        const components = Array.isArray(locationInput.details) ? locationInput.details : [];
+        location = {
+          fullAddress: locationInput.fullAddress,
+          details: {
+            streetNumber: locationInput.details?.streetNumber || components.find(c => c.types?.includes('street_number'))?.long_name || '',
+            street: locationInput.details?.street || components.find(c => c.types?.includes('route'))?.long_name || '',
+            city: locationInput.details?.city || components.find(c => c.types?.includes('locality'))?.long_name || '',
+            state: locationInput.details?.state || components.find(c => c.types?.includes('administrative_area_level_1'))?.long_name || '',
+            country: locationInput.details?.country || components.find(c => c.types?.includes('country'))?.long_name || '',
+            postalCode: locationInput.details?.postalCode || components.find(c => c.types?.includes('postal_code'))?.long_name || ''
+          }
+        };
+      } else {
+        location = { ...location, ...locationInput };
+      }
+    }
+    console.log('Mapped location:', location);
+
+    const updateData = {
+      name,
+      phone,
+      profile: {
+        ...currentUser.profile,
+        location,
+        image: currentUser.profile?.image || '/images/default-user.png',
+        skills: currentUser.profile?.skills || [],
+        availability: currentUser.profile?.availability || 'Unavailable',
+        status: currentUser.profile?.status || 'active',
+        feedback: currentUser.profile?.feedback || [],
+        bookedServices: currentUser.profile?.bookedServices || [],
+        appointments: currentUser.profile?.appointments || []
+      }
+    };
+
+    if (req.body.skills) {
+      updateData.profile.skills = req.body.skills.split(',').map(skill => skill.trim());
+    }
+    if (req.body.availability) {
+      updateData.profile.availability = req.body.availability;
+    }
+    if (req.file) {
+      updateData.profile.image = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
+
+    console.log('Profile Updated:', {
+      userId: updatedUser._id,
+      name: updatedUser.name,
+      profileExists: !!updatedUser.profile,
+      profileImage: updatedUser.profile?.image || '/images/default-user.png',
+      appointments: updatedUser.profile.appointments.length
+    });
+
+    if (global.io) {
+      global.io.to(userId.toString()).emit('userUpdated', updatedUser);
+    }
+
+    res.json(updatedUser);
+  }),
+];
+
+const toggleStatus = asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.profile.status = user.profile.status === 'active' ? 'inactive' : 'active';
+  await user.save();
+
+  console.log('Status Toggled:', {
+    userId: user._id,
+    status: user.profile.status,
+    profileImage: user.profile?.image || '/images/default-user.png'
+  });
+
+  if (global.io) {
+    global.io.to(userId.toString()).emit('userUpdated', user);
+  }
+
+  res.json({ message: `Status updated to ${user.profile.status}`, status: user.profile.status });
+});
+
+const toggleAvailability = asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.profile.availability = user.profile.availability === 'Available' ? 'Unavailable' : 'Available';
+  await user.save();
+
+  console.log('Availability Toggled:', {
+    userId: user._id,
+    availability: user.profile.availability,
+    profileImage: user.profile?.image || '/images/default-user.png'
+  });
+
+  if (global.io) {
+    global.io.to(userId.toString()).emit('userUpdated', user);
+  }
+
+  res.json({ message: `Availability updated to ${user.profile.availability}`, availability: user.profile.availability });
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    res.status(400);
+    throw new Error('New password must be at least 6 characters long');
+  }
+
+  const isMatch = await user.matchPassword(currentPassword);
+  if (!isMatch) {
+    res.status(400);
+    throw new Error('Current password is incorrect');
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({ message: 'Password changed successfully' });
+});
+
+const deleteAccount = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  await User.findByIdAndDelete(userId);
+
+  if (global.io) {
+    global.io.to(userId.toString()).emit('userDeleted', { _id: userId });
+  }
+
+  res.json({ message: 'Account deleted successfully' });
+});
+
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password, phone, role, location } = req.body;
+
+  if (!name || !email || !password || !role) {
+    res.status(400);
+    throw new Error('All fields are required');
+  }
+
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    res.status(400);
+    throw new Error('User already exists');
+  }
+
+  let userLocation = {
+    fullAddress: '',
+    details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' }
+  };
+  if (location) {
+    userLocation = await convertToCity(location);
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    password,
+    phone,
+    role,
+    profile: {
+      location: userLocation,
+      image: '/images/default-user.png',
+      skills: [],
+      availability: 'Unavailable',
+      status: 'active',
+      feedback: [],
+      bookedServices: [],
+      appointments: []
+    },
+  });
+
+  console.log('User Registered:', {
+    userId: user._id,
+    name: user.name,
+    profileExists: !!user.profile,
+    profileImage: user.profile.image,
+    appointments: user.profile.appointments.length
+  });
+
+  if (user) {
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profile: user.profile
+    });
+  } else {
+    res.status(400);
+    throw new Error('Invalid user data');
+  }
+});
+
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    res.status(401);
+    throw new Error('Invalid email or password');
+  }
+
+  if (!user.profile) {
+    user.profile = {
+      image: '/images/default-user.png',
+      location: { fullAddress: '', details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' } },
+      skills: [],
+      availability: 'Unavailable',
+      status: 'active',
+      feedback: [],
+      bookedServices: [],
+      appointments: []
+    };
+    await user.save();
+  }
+
+  if (await user.matchPassword(password)) {
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      profile: user.profile,
+      token: 'dummy-token',
+    });
+  } else {
+    res.status(401);
+    throw new Error('Invalid email or password');
+  }
+});
+
+const contactAdmin = asyncHandler(async (req, res) => {
+  const { providerId, providerName, message } = req.body;
+  const customerId = req.user._id;
+
+  if (!providerId || !providerName || !message) {
+    res.status(400);
+    throw new Error('Provider details and a message are required.');
+  }
+
+  const newMessage = await Message.create({
+    customerId,
+    providerId,
+    providerName,
+    message,
+  });
+
+  if (newMessage) {
+    if (global.io) {
+      const populatedMessage = await Message.findById(newMessage._id)
+        .populate('customerId', 'name email')
+        .populate('providerId', 'name');
+      global.io.emit('newAdminMessage', populatedMessage);
+    }
+    res.status(201).json({ message: 'Message sent successfully to admin.' });
+  } else {
+    res.status(500);
+    throw new Error('Failed to save the message.');
+  }
+});
+
+const getCustomerMessages = asyncHandler(async (req, res) => {
+  const customerId = req.user._id;
+  const messages = await Message.find({ customerId: customerId })
+    .populate('providerId', 'name profile.image')
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(messages);
+});
+
+module.exports = { 
+  registerUser, 
+  loginUser, 
+  getProfile, 
+  updateProfile, 
+  changePassword, 
+  deleteAccount, 
+  toggleStatus, 
+  toggleAvailability,
+  contactAdmin,
+  getCustomerMessages
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
+const Message = require('../models/Message');
+const multer = require('multer');
+const path = require('path');
+const axios = require('axios');
+const bcrypt = require('bcrypt');
+
+const storage = multer.diskStorage({
   destination: './Uploads/',
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -383,7 +932,7 @@ module.exports = {
   toggleAvailability,
   contactAdmin,
   getCustomerMessages
-};
+}; */
 
 
 

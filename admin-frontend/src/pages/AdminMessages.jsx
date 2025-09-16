@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import io from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
+
 import {
   Box, Typography, Paper, CircularProgress, Alert, ToggleButton, ToggleButtonGroup, Card, CardContent, CardActions,
-  IconButton, Tooltip, TextField, Modal, Button, Checkbox, Avatar, Chip
+  IconButton, Tooltip, TextField, Modal, Button, Checkbox, Avatar, Chip,
 } from '@mui/material';
-import { MarkEmailRead as MarkReadIcon, Delete as DeleteIcon, Reply as ReplyIcon } from '@mui/icons-material';
+import { MarkEmailRead as MarkReadIcon, Delete as DeleteIcon, Reply as ReplyIcon, ArrowBack} from '@mui/icons-material';
 
 const socket = io('http://localhost:5000');
 
@@ -29,6 +31,7 @@ const AdminMessages = () => {
   const [currentMessage, setCurrentMessage] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -194,6 +197,9 @@ const AdminMessages = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{ width: { xs: '100%', md: 300 } }}
           />
+          <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin/dashboard")}>
+                        Back to Dashboard
+                      </Button>
           <ToggleButtonGroup color="primary" value={filter} exclusive onChange={handleFilterChange}>
             <ToggleButton value="new">New</ToggleButton>
             <ToggleButton value="read">Read</ToggleButton>

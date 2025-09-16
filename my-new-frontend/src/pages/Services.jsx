@@ -588,29 +588,24 @@ const Services = () => {
           sx={{ 
             '& .MuiDialog-paper': { 
               borderRadius: 4, 
-              maxHeight: { xs: '90vh', lg: 'min(90vh, 800px)' }, // Increased maxHeight for better content visibility
-              minHeight: { xs: 'auto', lg: '600px' }, // Consistent minHeight for all steps
-              width: { xs: '95%', sm: '80%', md: '600px' }, // Responsive width
-              display: 'flex', 
-              flexDirection: 'column' 
+              maxHeight: { xs: '90vh', lg: 'min(90vh, 700px)' }, // Cap height on lg/xl screens
+              minHeight: { lg: activeStep === 2 ? '600px' : 'auto' } // Ensure enough height for Payment step
             } 
           }}
         >
-          <DialogTitle sx={{ bgcolor: '#4F46E5', color: 'white', py: 2, px: 3, mb: 2, textAlign: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+          <DialogTitle sx={{ bgcolor: '#4F46E5', color: 'white', py:1, px: 1, mb: 2, textAlign: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
             Book Service: {selectedService?.name || 'Service'}
           </DialogTitle>
           <DialogContent sx={{
             pt: 3,
             pb: 2,
             bgcolor: '#F9FAFB',
-            overflowY: 'auto', // Enable scrolling for all steps
-            scrollbarWidth: 'none', // Firefox: hide scrollbar
-            '&::-webkit-scrollbar': { display: 'none' }, // Chrome, Safari: hide scrollbar
-            '-ms-overflow-style': 'none', // IE, Edge: hide scrollbar
-            flexGrow: 1, // Allow content to take available space
-            display: 'flex', 
-            flexDirection: 'column',
-            gap: 2
+            /* overflowY: activeStep === 2 ? 'auto' : 'hidden',
+            scrollbarWidth: 'none', // Firefox
+            '&::-webkit-scrollbar': { display: 'none' }, // Chrome, Safari
+            '-ms-overflow-style': 'none', // IE, Edge */
+            minHeight: { lg: activeStep === 2 ? '400px' : 'auto' },
+            className: 'custom-scrollbar' // Ensure enough space for Payment step
           }}>
             <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
               <Step><StepLabel>Details</StepLabel></Step>
@@ -620,7 +615,7 @@ const Services = () => {
             </Stepper>
             {scheduleError && <Alert severity="error" sx={{ mb: 2 }}>{scheduleError}</Alert>}
             {activeStep === 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
                 <TextField
                   label="Date"
                   type="date"
@@ -660,7 +655,7 @@ const Services = () => {
               </Box>
             )}
             {activeStep === 1 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
                 <Typography variant="h6" sx={{ color: '#1F2937', mb: 2, fontSize: '1.1rem' }}>Confirm Your Details</Typography>
                 <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: '#F9FAFB' }}>
                   <Typography sx={{ mb: 1, fontSize: '0.9rem' }}><strong>Service:</strong> {selectedService?.name || 'N/A'}</Typography>
@@ -697,7 +692,7 @@ const Services = () => {
                     sx={{
                       fontWeight: 'bold',
                       color: '#111827',
-                      mb: 2,
+                      mb: 1,
                       fontSize: '1.1rem'
                     }}
                   >
@@ -748,8 +743,8 @@ const Services = () => {
               </Box>
             )}
             {activeStep === 2 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: '400px' }}>
-                <Typography variant="h6" sx={{ color: '#1F2937', mb: 1, fontSize: '1.1rem' }}>Complete Your Payment</Typography>
+              <Box sx={{ minHeight: { lg: '400px' } }}>
+                <Typography variant="h6" sx={{ color: '#1F2937', mb: 2, fontSize: '1.1rem' }}>Complete Your Payment</Typography>
                 <Typography sx={{ color: '#6B7280', mb: 2, fontSize: '0.9rem' }}>Please enter your payment details below to confirm the booking.</Typography>
                 {clientSecret && stripePromise && (
                   <Elements stripe={stripePromise} options={{ clientSecret }}>
@@ -762,14 +757,14 @@ const Services = () => {
               </Box>
             )}
             {activeStep === 3 && (
-              <Box sx={{ textAlign: 'center', py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
                 <CheckCircle color="success" sx={{ fontSize: 60 }} />
                 <Typography variant="h5" sx={{ mt: 2, color: '#1F2937', fontSize: '1.25rem' }}>Booking Confirmed!</Typography>
                 <Typography sx={{ color: '#6B7280', fontSize: '0.9rem' }}>Your booking is successful and is awaiting provider assignment. You will be notified shortly.</Typography>
               </Box>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 2, justifyContent: 'center', bgcolor: '#F9FAFB', flexShrink: 0 }}>
+          <DialogActions sx={{ p: 2, justifyContent: 'center', bgcolor: '#F9FAFB' }}>
             <Button onClick={handleCloseSchedule} sx={{ color: '#4F46E5', fontSize: '0.9rem' }}>Cancel</Button>
             {(activeStep === 1 || activeStep === 2) && (
               <Button onClick={handleScheduleBack} sx={{ color: '#4F46E5', fontSize: '0.9rem' }}>Back</Button>
@@ -811,7 +806,7 @@ const Services = () => {
           <DialogTitle sx={{ bgcolor: '#4F46E5', color: 'white', py: 2, px: 3, mb: 2, textAlign: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
             {selectedService?.name || 'Service'}
           </DialogTitle>
-          <DialogContent sx={{ pt: 3, pb: 2, overflowY: 'auto', bgcolor: '#F9FAFB' }}>
+          <DialogContent sx={{ pt: 3, pb: 2, overflowY: 'hidden', bgcolor: '#F9FAFB' }}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={5}>
                 <CardMedia

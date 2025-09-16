@@ -16,7 +16,6 @@ const feedbackRoutes = require('./routes/feedback');
 const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
 const serviceRoutes = require('./routes/services');
-const orderRoutes = require('./routes/orders');
 const dashboardRoutes = require('./routes/dashboard');
 const appointmentRoutes = require('./routes/appointments');
 const contactRoutes = require('./routes/contact');
@@ -51,7 +50,7 @@ app.use(cors({
 app.post('/api/payments/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/Uploads', express.static(path.join(__dirname, 'Uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -60,7 +59,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/orders', orderRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/contact', contactRoutes);
@@ -108,7 +106,6 @@ io.on('connection', (socket) => {
   const emitInitialData = async () => {
     try {
       const Booking = require('./models/Booking');
-      const Order = require('./models/Order');
       const Service = require('./models/Service');
       const Feedback = require('./models/Feedback');
       const Appointment = require('./models/Appointment');
@@ -119,14 +116,12 @@ io.on('connection', (socket) => {
       ]);
       socket.emit('revenueUpdated', { total: revenue[0]?.total || 0 });
 
-      const [orderCount, serviceCount, feedbackCount, paymentCount, appointmentCount] = await Promise.all([
-        Order.countDocuments(),
+      const [ serviceCount, feedbackCount, paymentCount, appointmentCount] = await Promise.all([
         Service.countDocuments(),
         Feedback.countDocuments(),
         Booking.countDocuments({ 'paymentDetails.status': 'completed' }),
         Appointment.countDocuments(),
       ]);
-      socket.emit('ordersUpdated', { count: orderCount });
       socket.emit('servicesUpdated', { count: serviceCount });
       socket.emit('feedbacksUpdated', { count: feedbackCount });
       socket.emit('paymentsUpdated', { count: paymentCount });

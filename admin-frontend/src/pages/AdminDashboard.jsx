@@ -232,7 +232,7 @@ const AdminDashboard = () => {
   
   const SidebarList = () => (
     <List>
-      <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin')}><ListItemIcon sx={{ color: '#fff' }}><Dashboard /></ListItemIcon><ListItemText primary="Dashboard" sx={{color: 'white'}}/></ListItem>
+      <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/dashboard')}><ListItemIcon sx={{ color: '#fff' }}><Dashboard /></ListItemIcon><ListItemText primary="Dashboard" sx={{color: 'white'}}/></ListItem>
       <ListItem 
         button 
         sx={{ cursor: 'pointer' }} 

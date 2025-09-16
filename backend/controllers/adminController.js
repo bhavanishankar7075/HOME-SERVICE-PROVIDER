@@ -8,7 +8,7 @@ const Log = require('../models/Log');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-exports.getUsers = asyncHandler(async (req, res) => {
+/* exports.getUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find().select('-password').lean();
     res.json(users.map(user => ({
@@ -24,6 +24,76 @@ exports.getUsers = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Error fetching users', error: error.message });
   }
 });
+ */
+
+
+
+
+exports.getUsers = asyncHandler(async (req, res) => {
+  try {
+    const users = await User.find()
+      .select("-password")
+      .populate({
+        path: "profile.feedback",
+        model: "Feedback",
+        select: "rating comment createdAt",
+        populate: {
+          path: "bookingId",
+          select: "service",
+          populate: {
+            path: "service",
+            model: "Service",
+            select: "name",
+          },
+        },
+      })
+      .populate({
+        path: "profile.bookedServices",
+        model: "Service",
+        select: "name",
+      })
+      .lean();
+
+    res.json(
+      users.map((user) => ({
+        ...user,
+        profile: {
+          ...user.profile,
+          image: user.profile?.image || "/images/default-user.png",
+          feedback: user.profile?.feedback || [],
+          bookedServices: user.profile?.bookedServices || [],
+        },
+        image: user.profile?.image
+          ? `/uploads${user.profile.image.startsWith("/") ? user.profile.image : "/" + user.profile.image}`
+          : "/images/default-user.png",
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching users", error: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 exports.updateUserRole = asyncHandler(async (req, res) => {
   try {

@@ -11,6 +11,7 @@ import { styled } from '@mui/material/styles';
 import io from 'socket.io-client';
 import axios from 'axios';
 import '../styles/NavBar.css';
+import serviceHubLogo from '../assets/service-hub-logo.png'; // Only using service-hub-logo
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
@@ -216,13 +217,12 @@ const Navbar = () => {
               setLocationError(data.error_message || 'Failed to fetch location details.');
               return;
             }
-            // Use the most detailed address available, prioritizing street_address
             const address = data.results.find(result => result.types.includes('street_address')) 
               || data.results.find(result => result.types.includes('locality')) 
               || data.results[0];
             const formattedAddress = address?.formatted_address || 'Unknown';
             dispatch(setLocation(formattedAddress));
-            setLocationSearch(formattedAddress); // Update the search input
+            setLocationSearch(formattedAddress);
             setLocationPopupOpen(false);
           } catch (error) {
             setLocationError('Failed to fetch location. Check internet connection.');
@@ -231,7 +231,7 @@ const Navbar = () => {
         (error) => {
           setLocationError('Unable to access your location. Please enable location services.');
         },
-        { enableHighAccuracy: true } // Request high accuracy for better results
+        { enableHighAccuracy: true }
       );
     } else {
       setLocationError('Geolocation is not supported by your browser.');
@@ -276,10 +276,8 @@ const Navbar = () => {
       <div className="navbar-container">
         <div className="navbar-content">
           <div className="navbar-logo" onClick={() => navigate('/home')}>
-            <HomeIcon style={{ color: 'white', width: '24px', height: '24px' }} />
             <div className="logo-text">
-              <span className="logo-title">ServiceHub</span>
-              <div className="logo-subtitle">Home Services</div>
+              <img src={serviceHubLogo} alt="ServiceHub Logo" className="service-hub-logo" />
             </div>
           </div>
 
@@ -330,7 +328,7 @@ const Navbar = () => {
           <div className="navbar-actions">
             <div className="location-search-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapPin style={{ color: 'hsl(220 8.9% 46.1%)', cursor: 'pointer' }} onClick={() => setLocationPopupOpen(true)} />
-              {location && <span className="location-display">{location}</span>} {/* Display full address */}
+              {location && <span className="location-display">{location}</span>}
             </div>
 
             {isAuthenticated && (
