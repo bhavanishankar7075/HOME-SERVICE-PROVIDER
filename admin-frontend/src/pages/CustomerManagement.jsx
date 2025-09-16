@@ -286,7 +286,7 @@ const CustomerManagement = () => {
       </Typography>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4, flexWrap: "wrap", gap: 2 }}>
-        <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin")}>
+        <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin/dashboard")}>
           Back to Dashboard
         </Button>
         <TextField

@@ -7,26 +7,7 @@ const mongoose = require('mongoose');
 const Log = require('../models/Log');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-/* exports.getUsers = asyncHandler(async (req, res) => {
-  try {
-    const users = await User.find().select('-password').lean();
-    res.json(users.map(user => ({
-      ...user,
-      profile: {
-        ...user.profile,
-        image: user.profile.image ? user.profile.image : '',
-        feedback: user.profile.feedback || [],
-        bookedServices: user.profile.bookedServices || []
-      },
-    })));
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching users', error: error.message });
-  }
-});
- */
-
-
+const axios = require('axios'); // Ensure axios is imported
 
 
 exports.getUsers = asyncHandler(async (req, res) => {
@@ -72,26 +53,6 @@ exports.getUsers = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "Error fetching users", error: error.message });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -412,7 +373,246 @@ exports.updateSettings = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
+// Mapping of nearby cities (consistent with bookingController.js)
+const nearbyCities = {
+  'Madhuravada': ['Visakhapatnam', 'PM Palem'],
+  'Visakhapatnam': ['Madhuravada', 'PM Palem'],
+  'PM Palem': ['Visakhapatnam', 'Madhuravada'],
+  // Add more city mappings as needed
+};
+
 exports.getActiveProviders = asyncHandler(async (req, res) => {
+  try {
+    const location = req.query.location;
+    const services = req.query.services?.split(',').map(s => s.trim()) || [];
+
+    if (!location) {
+      return res.status(400).json({ message: 'Location is required' });
+    }
+
+    // Extract city from location
+    let customerCity = '';
+    const locationParts = location.split(',').map(part => part.trim().toLowerCase());
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      );
+      if (response.data.status === 'OK' && response.data.results.length > 0) {
+        const addressComponents = response.data.results[0].address_components;
+        customerCity = addressComponents.find(comp => comp.types.includes('locality'))?.long_name ||
+                       addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name ||
+                       '';
+        console.log(`[getActiveProviders] Geocoded customer city: ${customerCity} from location: ${location}`);
+      }
+    } catch (error) {
+      console.error(`[getActiveProviders] Geocoding error for location ${location}: ${error.message}`);
+    }
+
+    // Fallback: Parse city from location string
+    if (!customerCity) {
+      const cityMap = {
+        'madhuravada': 'Madhuravada',
+        'visakhapatnam': 'Visakhapatnam',
+        'pm palem': 'PM Palem'
+        // Add more as needed
+      };
+      for (const key of Object.keys(cityMap)) {
+        if (locationParts.some(part => part.includes(key))) {
+          customerCity = cityMap[key];
+          break;
+        }
+      }
+      if (!customerCity) {
+        console.log(`[getActiveProviders] Could not extract city from location: ${location}`);
+        return res.status(400).json({ message: 'Could not determine city from location' });
+      }
+    }
+
+    // Get nearby cities
+    const citiesToMatch = [customerCity, ...(nearbyCities[customerCity] || [])];
+    console.log(`[getActiveProviders] Cities to match: ${citiesToMatch}`);
+
+    // Build query
+    const query = {
+      role: 'provider',
+      'profile.status': 'active',
+      $or: [
+        { 'profile.location.details.city': { $in: citiesToMatch } },
+        { 'profile.location.fullAddress': { $regex: citiesToMatch.join('|'), $options: 'i' } }
+      ]
+    };
+    if (services.length > 0) {
+      query['profile.skills'] = { $in: services };
+    }
+
+    const providers = await User.find(query)
+      .select('name email phone profile')
+      .lean();
+
+    console.log(`[getActiveProviders] Location: ${location}, Services: ${services.join(',') || 'none'}, Providers found: ${providers.length}`);
+
+    res.status(200).json(providers);
+  } catch (error) {
+    console.error('[getActiveProviders] Error fetching active providers:', error);
+    res.status(500).json({ message: 'Server error while fetching providers' });
+  }
+});
+
+exports.assignProvider = asyncHandler(async (req, res) => {
+  try {
+    const { bookingId, providerId } = req.body;
+
+    if (!mongoose.isValidObjectId(bookingId) || !mongoose.isValidObjectId(providerId)) {
+      return res.status(400).json({ message: 'Invalid booking or provider ID' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('service');
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const provider = await User.findById(providerId);
+    if (!provider || provider.role !== 'provider' || provider.profile.status !== 'active') {
+      return res.status(400).json({ message: 'Invalid or inactive provider' });
+    }
+
+    // Extract city from booking location
+    let bookingCity = '';
+    const locationParts = booking.location.split(',').map(part => part.trim().toLowerCase());
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(booking.location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      );
+      if (response.data.status === 'OK' && response.data.results.length > 0) {
+        const addressComponents = response.data.results[0].address_components;
+        bookingCity = addressComponents.find(comp => comp.types.includes('locality'))?.long_name ||
+                      addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name ||
+                      '';
+        console.log(`[assignProvider] Geocoded booking city: ${bookingCity} from location: ${booking.location}`);
+      }
+    } catch (error) {
+      console.error(`[assignProvider] Geocoding error for booking location ${booking.location}: ${error.message}`);
+    }
+
+    // Fallback: Parse city from booking location
+    if (!bookingCity) {
+      const cityMap = {
+        'madhuravada': 'Madhuravada',
+        'visakhapatnam': 'Visakhapatnam',
+        'pm palem': 'PM Palem'
+        // Add more as needed
+      };
+      for (const key of Object.keys(cityMap)) {
+        if (locationParts.some(part => part.includes(key))) {
+          bookingCity = cityMap[key];
+          break;
+        }
+      }
+      if (!bookingCity) {
+        console.log(`[assignProvider] Could not extract city from booking location: ${booking.location}`);
+        return res.status(400).json({ message: 'Could not determine city from booking location' });
+      }
+    }
+
+    // Get nearby cities for booking
+    const bookingCities = [bookingCity, ...(nearbyCities[bookingCity] || [])];
+
+    // Check provider location compatibility
+    const providerCity = provider.profile.location.details.city || '';
+    const providerFullAddress = provider.profile.location.fullAddress || '';
+    const isLocationMatch = bookingCities.includes(providerCity) ||
+                           bookingCities.some(city => providerFullAddress.toLowerCase().includes(city.toLowerCase()));
+
+    if (!isLocationMatch) {
+      console.log(`[assignProvider] Location mismatch: Booking city=${bookingCity}, Provider city=${providerCity}, Provider address=${providerFullAddress}`);
+      return res.status(400).json({ message: 'Provider location does not match booking location' });
+    }
+
+    // Check skills compatibility
+    const requiredSkills = booking.service.category ? [booking.service.category] : [];
+    if (requiredSkills.length > 0 && !provider.profile.skills.some(skill => requiredSkills.includes(skill))) {
+      console.log(`[assignProvider] Skills mismatch: Required=${requiredSkills}, Provider skills=${provider.profile.skills}`);
+      return res.status(400).json({ message: 'Provider does not have required skills' });
+    }
+
+    // Check availability
+    const bookingDate = new Date(booking.scheduledTime);
+    const conflictingBookings = await Booking.find({
+      provider: providerId,
+      scheduledTime: {
+        $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+        $lte: new Date(bookingDate.setHours(23, 59, 59, 999)),
+      },
+      status: { $in: ['assigned', 'in-progress'] },
+    });
+
+    if (conflictingBookings.length > 0) {
+      console.log(`[assignProvider] Provider ${providerId} has conflicting bookings`);
+      return res.status(400).json({ message: 'Provider has conflicting bookings' });
+    }
+
+    // Assign provider
+    booking.provider = providerId;
+    booking.status = 'assigned';
+    await booking.save();
+
+    console.log(`[assignProvider] Provider ${providerId} assigned to booking ${bookingId}`);
+    res.status(200).json({ message: 'Provider assigned successfully', booking });
+  } catch (error) {
+    console.error('[assignProvider] Error assigning provider:', error);
+    res.status(500).json({ message: 'Server error while assigning provider' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
     const location = req.query.location;
     const services = req.query.services?.split(',') || [];
@@ -444,7 +644,24 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
     console.error('Error fetching active providers:', error);
     res.status(500).json({ message: 'Server error while fetching providers' });
   }
-});
+}); */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 exports.getMessages = asyncHandler(async (req, res) => {
     const messages = await Message.find({})

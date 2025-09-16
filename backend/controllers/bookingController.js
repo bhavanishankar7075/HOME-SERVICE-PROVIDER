@@ -4,6 +4,8 @@ const Service = require('../models/Service');
 const User = require('../models/User');
 const Joi = require('joi');
 const mongoose = require('mongoose');
+const axios = require('axios'); // Ensure axios is imported
+
 
 const bookingValidationSchema = Joi.object({
   serviceId: Joi.string().required().messages({
@@ -132,7 +134,7 @@ const createBooking = asyncHandler(async (req, res) => {
   res.status(201).json(booking);
 });
 
-const assignProvider = asyncHandler(async (req, res) => {
+/* const assignProvider = asyncHandler(async (req, res) => {
   const { providerId } = req.body;
   const { bookingId } = req.params;
 
@@ -253,9 +255,321 @@ const assignProvider = asyncHandler(async (req, res) => {
   }
 
   res.json({ message: 'Provider assigned successfully', booking: populatedBooking });
-});
+}); */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Mapping of nearby cities (consistent with adminController.js)
+const nearbyCities = {
+  'Madhuravada': ['Visakhapatnam', 'PM Palem'],
+  'Visakhapatnam': ['Madhuravada', 'PM Palem'],
+  'PM Palem': ['Visakhapatnam', 'Madhuravada'],
+  // Add more city mappings as needed
+};
 
 const findAvailableProviders = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  if (!mongoose.isValidObjectId(bookingId)) {
+    res.status(400);
+    throw new Error('Invalid booking ID format');
+  }
+
+  const booking = await Booking.findById(bookingId).populate('service customer');
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+
+  if (!booking.customer) {
+    console.log(`[findAvailableProviders] Invalid booking customer: bookingId=${bookingId}`);
+    res.status(400);
+    throw new Error('Booking has no valid customer');
+  }
+
+  const { service, scheduledTime, location } = booking;
+  if (!scheduledTime || !location) {
+    res.status(400);
+    throw new Error('Booking missing scheduled time or location');
+  }
+
+  const skills = service.category ? [service.category] : [];
+  if (skills.length === 0) {
+    res.status(400);
+    throw new Error('Service missing category');
+  }
+
+  // Extract city from booking location
+  let customerCity = '';
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+    );
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const addressComponents = response.data.results[0].address_components;
+      customerCity = addressComponents.find(comp => comp.types.includes('locality'))?.long_name ||
+                     addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name ||
+                     '';
+      console.log(`[findAvailableProviders] Geocoded customer city: ${customerCity} from location: ${location}`);
+    }
+  } catch (error) {
+    console.error(`[findAvailableProviders] Geocoding error for location ${location}: ${error.message}`);
+  }
+
+  // Fallback: Parse city from location string
+  if (!customerCity) {
+    const locationParts = location.split(',').map(part => part.trim().toLowerCase());
+    const cityMap = {
+      'madhuravada': 'Madhuravada',
+      'visakhapatnam': 'Visakhapatnam',
+      'pm palem': 'PM Palem'
+      // Add more as needed
+    };
+    for (const key of Object.keys(cityMap)) {
+      if (locationParts.some(part => part.includes(key))) {
+        customerCity = cityMap[key];
+        break;
+      }
+    }
+    if (!customerCity) {
+      console.log(`[findAvailableProviders] Could not extract city from location: ${location}`);
+      res.status(400);
+      throw new Error('Could not determine city from booking location');
+    }
+    console.log(`[findAvailableProviders] Fallback city extracted: ${customerCity}`);
+  }
+
+  // Get nearby cities
+  const citiesToMatch = [customerCity, ...(nearbyCities[customerCity] || [])];
+  console.log(`[findAvailableProviders] Cities to match: ${citiesToMatch}`);
+
+  const bookingDate = new Date(scheduledTime);
+  const now = new Date();
+  const isImmediateBooking = Math.abs(bookingDate - now) < 5 * 60 * 1000;
+
+  // Query providers by city
+  const providers = await User.find({
+    role: 'provider',
+    'profile.status': 'active',
+    'profile.skills': { $in: skills },
+    $or: [
+      { 'profile.location.details.city': { $in: citiesToMatch } },
+      { 'profile.location.fullAddress': { $regex: citiesToMatch.join('|'), $options: 'i' } }
+    ]
+  })
+    .select('name email phone profile')
+    .lean();
+
+  console.log(`[findAvailableProviders] Booking ID: ${bookingId}, Skills: ${skills}, City: ${customerCity}, Cities to match: ${citiesToMatch}, Providers found: ${providers.length}`);
+
+  const suitableProviders = await Promise.all(
+    providers.map(async (provider) => {
+      const conflictingBookings = await Booking.find({
+        provider: provider._id,
+        scheduledTime: {
+          $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+          $lte: new Date(bookingDate.setHours(23, 59, 59, 999)),
+        },
+        status: { $in: ['assigned', 'in-progress'] },
+      });
+      if (conflictingBookings.length > 0) {
+        console.log(`[findAvailableProviders] Provider ${provider._id} excluded: Conflicting bookings`);
+        return null;
+      }
+
+      if (isImmediateBooking) {
+        return provider;
+      }
+
+      const availabilityString = provider.profile?.availability;
+      if (!availabilityString) {
+        console.log(`[findAvailableProviders] Provider ${provider._id} excluded: No availability`);
+        return null;
+      }
+      if (availabilityString === 'Available') {
+        return provider;
+      }
+      if (availabilityString.includes(' ')) {
+        try {
+          const [availDateStr, timeRangeStr] = availabilityString.split(' ');
+          const [startTimeStr, endTimeStr] = timeRangeStr.split('-');
+          const bookingDateStr = bookingDate.toISOString().split('T')[0];
+          const bookingTimeStr = bookingDate.toTimeString().slice(0, 5);
+          if (
+            availDateStr === bookingDateStr &&
+            bookingTimeStr >= startTimeStr &&
+            bookingTimeStr <= endTimeStr
+          ) {
+            return provider;
+          }
+          console.log(`[findAvailableProviders] Provider ${provider._id} excluded: Availability mismatch (${availabilityString})`);
+        } catch (e) {
+          console.error(`[findAvailableProviders] Error parsing availability for provider ${provider._id}: ${availabilityString}`);
+        }
+      }
+      return null;
+    })
+  );
+
+  const filteredProviders = suitableProviders.filter((p) => p !== null);
+  console.log(`[findAvailableProviders] Suitable providers: ${filteredProviders.length}`);
+  res.json(filteredProviders);
+});
+
+const assignProvider = asyncHandler(async (req, res) => {
+  try {
+    const { providerId } = req.body;
+    const { bookingId } = req.params;
+
+    if (!mongoose.isValidObjectId(bookingId) || !mongoose.isValidObjectId(providerId)) {
+      return res.status(400).json({ message: 'Invalid booking or provider ID' });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('service');
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const provider = await User.findById(providerId);
+    if (!provider || provider.role !== 'provider' || provider.profile.status !== 'active') {
+      return res.status(400).json({ message: 'Invalid or inactive provider' });
+    }
+
+    // Extract city from booking location
+    let bookingCity = '';
+    const locationParts = booking.location.split(',').map(part => part.trim().toLowerCase());
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(booking.location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      );
+      if (response.data.status === 'OK' && response.data.results.length > 0) {
+        const addressComponents = response.data.results[0].address_components;
+        bookingCity = addressComponents.find(comp => comp.types.includes('locality'))?.long_name ||
+                      addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name ||
+                      '';
+        console.log(`[assignProvider] Geocoded booking city: ${bookingCity} from location: ${booking.location}`);
+      }
+    } catch (error) {
+      console.error(`[assignProvider] Geocoding error for booking location ${booking.location}: ${error.message}`);
+    }
+
+    // Fallback: Parse city from booking location
+    if (!bookingCity) {
+      const cityMap = {
+        'madhuravada': 'Madhuravada',
+        'visakhapatnam': 'Visakhapatnam',
+        'pm palem': 'PM Palem'
+        // Add more as needed
+      };
+      for (const key of Object.keys(cityMap)) {
+        if (locationParts.some(part => part.includes(key))) {
+          bookingCity = cityMap[key];
+          break;
+        }
+      }
+      if (!bookingCity) {
+        console.log(`[assignProvider] Could not extract city from booking location: ${booking.location}`);
+        return res.status(400).json({ message: 'Could not determine city from booking location' });
+      }
+      console.log(`[assignProvider] Fallback city extracted: ${bookingCity}`);
+    }
+
+    // Get nearby cities for booking
+    const bookingCities = [bookingCity, ...(nearbyCities[bookingCity] || [])];
+    console.log(`[assignProvider] Cities to match: ${bookingCities}`);
+
+    // Check provider location compatibility
+    const providerCity = provider.profile.location.details.city || '';
+    const providerFullAddress = provider.profile.location.fullAddress || '';
+    const isLocationMatch = bookingCities.includes(providerCity) ||
+                           bookingCities.some(city => providerFullAddress.toLowerCase().includes(city.toLowerCase()));
+
+    if (!isLocationMatch) {
+      console.log(`[assignProvider] Location mismatch: Booking city=${bookingCity}, Provider city=${providerCity}, Provider address=${providerFullAddress}`);
+      return res.status(400).json({ message: 'Provider location does not match booking location' });
+    }
+
+    // Check skills compatibility
+    const requiredSkills = booking.service.category ? [booking.service.category] : [];
+    if (requiredSkills.length > 0 && !provider.profile.skills.some(skill => requiredSkills.includes(skill))) {
+      console.log(`[assignProvider] Skills mismatch: Required=${requiredSkills}, Provider skills=${provider.profile.skills}`);
+      return res.status(400).json({ message: 'Provider does not have required skills' });
+    }
+
+    // Check availability
+    const bookingDate = new Date(booking.scheduledTime);
+    const conflictingBookings = await Booking.find({
+      provider: providerId,
+      scheduledTime: {
+        $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+        $lte: new Date(bookingDate.setHours(23, 59, 59, 999)),
+      },
+      status: { $in: ['assigned', 'in-progress'] },
+    });
+
+    if (conflictingBookings.length > 0) {
+      console.log(`[assignProvider] Provider ${providerId} has conflicting bookings`);
+      return res.status(400).json({ message: 'Provider has conflicting bookings' });
+    }
+
+    // Assign provider
+    booking.provider = providerId;
+    booking.status = 'assigned';
+    await booking.save();
+
+    console.log(`[assignProvider] Provider ${providerId} assigned to booking ${bookingId}`);
+    res.status(200).json({ message: 'Provider assigned successfully', booking });
+  } catch (error) {
+    console.error('[assignProvider] Error assigning provider:', error);
+    res.status(500).json({ message: 'Server error while assigning provider' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* const findAvailableProviders = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
 
   if (!mongoose.isValidObjectId(bookingId)) {
@@ -359,7 +673,11 @@ const findAvailableProviders = asyncHandler(async (req, res) => {
   const filteredProviders = suitableProviders.filter((p) => p !== null);
   console.log(`[findAvailableProviders] Suitable providers: ${filteredProviders.length}`);
   res.json(filteredProviders);
-});
+}); */
+
+
+
+
 
 const getServices = asyncHandler(async (req, res) => {
   const services = await Service.find();

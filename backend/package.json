@@ -13,7 +13,7 @@
   "type": "commonjs",
   "dependencies": {
     "@stripe/stripe-js": "^7.9.0",
-    "axios": "^1.11.0",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
