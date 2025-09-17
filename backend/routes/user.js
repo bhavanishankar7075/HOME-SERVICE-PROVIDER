@@ -14,6 +14,8 @@ const {
   getCustomerMessages, // <-- 1. IMPORTED the new controller
 } = require('../controllers/userController');
 
+const { resetPassword } = require('../controllers/authController');
+
 // Import express-validator functions
 const { param, body } = require('express-validator');
 const mongoose = require('mongoose');
@@ -26,6 +28,7 @@ console.log('changePassword:', typeof changePassword);
 console.log('deleteAccount:', typeof deleteAccount);
 console.log('toggleStatus:', typeof toggleStatus);
 console.log('toggleAvailability:', typeof toggleAvailability);
+console.log('resetPassword:', typeof resetPassword); // Debug resetPassword
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
@@ -97,6 +100,9 @@ router.put('/profile/:userId/toggle-availability', [
     return true;
   }),
 ], toggleAvailability);
+
+
+router.post('/reset-password', resetPassword);
 
 module.exports = router;
 

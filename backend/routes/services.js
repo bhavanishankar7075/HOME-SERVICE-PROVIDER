@@ -74,40 +74,6 @@ module.exports = router;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
@@ -143,22 +109,6 @@ router.post('/', authMiddleware(['admin']), upload, createService);
 router.put('/:id', authMiddleware(['admin']), upload, updateService);
 router.delete('/:id', authMiddleware(['admin']), deleteService);
 router.post('/bulk-delete', authMiddleware(['admin']), bulkDeleteServices);
-
-module.exports = router;  */
-
-
-
-
-
-/* const express = require('express');
-const router = express.Router();
-const authMiddleware = require('../middleware/auth');
-const { createService, getServices, updateService, deleteService } = require('../controllers/serviceController');
-
-router.get('/', authMiddleware(['admin']), getServices);
-router.post('/', authMiddleware(['admin']), createService);
-router.put('/:id', authMiddleware(['admin']), updateService);
-router.delete('/:id', authMiddleware(['admin']), deleteService);
 
 module.exports = router;  */
 

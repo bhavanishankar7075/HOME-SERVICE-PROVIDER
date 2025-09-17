@@ -1,14 +1,14 @@
 // authRoutes.js
 const express = require('express');
 const router = express.Router();
-const { register, login, adminLogin, adminSignup,resetAdminPassword } = require('../controllers/authController');
+const { register, login, adminLogin, adminSignup,resetPassword } = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
 
 router.post('/register', register);
 router.post('/login', login);
 router.post('/admin-login', adminLogin);
 router.post('/admin-signup', adminSignup);
-router.post('/admin/reset-password', resetAdminPassword);
+router.post('/admin/reset-password', resetPassword);
 
 // Error handling middleware
 router.use((err, req, res, next) => {
