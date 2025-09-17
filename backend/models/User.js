@@ -19,7 +19,12 @@ const userSchema = new mongoose.Schema({
         state: { type: String, default: '' },
         country: { type: String, default: '' },
         postalCode: { type: String, default: '' }
-      }
+      },
+        coordinates: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     },
     image: { type: String, default: '/images/default-user.png' },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },

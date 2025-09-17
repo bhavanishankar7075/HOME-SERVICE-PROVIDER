@@ -136,7 +136,7 @@ const BookingManagement = () => {
     };
   }, [fetchBookings]);
 
-  const handleOpenAssignModal = async (booking) => {
+ /*  const handleOpenAssignModal = async (booking) => {
     if (!booking?._id || !/^[0-9a-fA-F]{24}$/.test(booking._id)) {
       setMessage({ open: true, text: 'Invalid booking ID', severity: 'error' });
       console.error('Invalid booking ID:', booking._id);
@@ -173,39 +173,110 @@ const BookingManagement = () => {
     } finally {
       setLoadingProviders(false);
     }
-  };
+  }; */
+
+
+
+
+
+
+const handleOpenAssignModal = async (booking, retries = 3, delay = 1000) => {
+  if (!booking?._id || !/^[0-9a-fA-F]{24}$/.test(booking._id)) {
+    setMessage({ open: true, text: 'Invalid booking ID', severity: 'error' });
+    console.error('Invalid booking ID:', booking._id);
+    return;
+  }
+  console.log('Selected booking ID:', booking._id);
+  setSelectedBooking(booking);
+  setAssignModalOpen(true);
+  setLoadingProviders(true);
+  setSuitableProviders([]); // Reset to avoid stale data
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await axios.get(`${API_URL}/api/admin/providers/active`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          location: booking.location,
+          services: booking.service?.category
+        }
+      });
+      const data = response.data;
+      console.log('Fetched providers response:', JSON.stringify(data, null, 2));
+      const providers = Array.isArray(data) ? data : [];
+      setSuitableProviders(providers);
+      if (providers.length === 0) {
+        setMessage({
+          open: true,
+          text: `No providers found for service (${booking.service?.name}), location (${booking.location}), or time (${new Date(booking.scheduledTime).toLocaleString()}). Try adjusting the location or time.`,
+          severity: 'warning',
+        });
+      }
+      break;
+    } catch (error) {
+      console.error('Error fetching providers:', error.response?.data || error.message);
+      if (i === retries - 1) {
+        const errorMessage = error.response?.data?.message || error.message;
+        setMessage({ 
+          open: true, 
+          text: `Failed to find providers: ${errorMessage.includes('Could not geocode location') ? 'Invalid booking location' : errorMessage}`, 
+          severity: 'error' 
+        });
+        setSuitableProviders([]);
+      } else {
+        console.log(`Retrying fetch providers (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } finally {
+      setLoadingProviders(false); // Ensure loading is set to false
+    }
+  }
+};
 
   const handleAssignProvider = async (providerId) => {
     setSelectedProviderId(providerId);
     setConfirmDialogOpen(true);
   };
 
-  const confirmAssignProvider = async () => {
-    if (!selectedBooking?._id || !selectedProviderId || assigning) return;
-    setAssigning(true);
-    try {
-      const { data } = await axios.put(
-        `${API_URL}/api/bookings/${selectedBooking._id}/assign-provider`,
-        { providerId: selectedProviderId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log('Assignment response:', data);
-      setAssignModalOpen(false);
-      setConfirmDialogOpen(false);
-      setMessage({ open: true, text: 'Provider assigned successfully', severity: 'success' });
-      fetchBookings();
-    } catch (error) {
-      console.error('Error assigning provider:', error.response?.data || error.message);
-      setMessage({
-        open: true,
-        text: `Failed to assign provider: ${error.response?.data?.message || error.message}`,
-        severity: 'error',
-      });
-    } finally {
-      setAssigning(false);
-      setSelectedProviderId(null);
+
+
+const confirmAssignProvider = async () => {
+  if (!selectedBooking?._id || !selectedProviderId || assigning) return;
+  setAssigning(true);
+  try {
+    const { data } = await axios.put(
+      `${API_URL}/api/bookings/${selectedBooking._id}/assign-provider`,
+      { providerId: selectedProviderId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log('Assignment response:', data);
+    setAssignModalOpen(false);
+    setConfirmDialogOpen(false);
+    setMessage({ open: true, text: 'Provider assigned successfully', severity: 'success' });
+    fetchBookings();
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error('Error assigning provider:', error.response?.data || error.message);
+    let userMessage = 'Failed to assign provider';
+    if (errorMessage.includes('Could not calculate distance')) {
+      userMessage = 'Unable to verify provider location. Try another provider or check location data.';
+    } else if (errorMessage.includes('Provider is too far')) {
+      userMessage = 'Selected provider is too far from the booking location.';
     }
-  };
+    setMessage({
+      open: true,
+      text: userMessage,
+      severity: 'error',
+    });
+  } finally {
+    setAssigning(false);
+    setSelectedProviderId(null);
+  }
+};
+
+
+
+
+
 
   const handleCloseConfirmDialog = () => {
     setConfirmDialogOpen(false);
@@ -319,69 +390,72 @@ const BookingManagement = () => {
         )}
       </Grid>
 
-      <Dialog open={assignModalOpen} onClose={() => setAssignModalOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Assign Provider for Booking #{selectedBooking?._id.slice(-6).toUpperCase()}</DialogTitle>
-        <DialogContent>
-          <Typography gutterBottom><strong>Service:</strong> {selectedBooking?.service?.name}</Typography>
-          <Typography gutterBottom><strong>Customer:</strong> {selectedBooking?.customerDetails?.name}</Typography>
-          <Typography gutterBottom><strong>Location:</strong> {selectedBooking?.location}</Typography>
-          <Typography gutterBottom><strong>Time:</strong> {selectedBooking?.scheduledTime ? new Date(selectedBooking.scheduledTime).toLocaleString() : 'N/A'}</Typography>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="h6">Suitable Providers</Typography>
-          {loadingProviders ? (
-            <CircularProgress sx={{ display: 'block', mx: 'auto', my: 2 }} />
-          ) : suitableProviders.length > 0 ? (
-            <List>
-              {suitableProviders.map(provider => (
-                <ListItem
-                  key={provider._id}
-                  secondaryAction={
-                    <Button
-                      edge="end"
-                      variant="contained"
-                      disabled={assigning}
-                      onClick={() => handleAssignProvider(provider._id)}
-                    >
-                      {assigning ? <CircularProgress size={24} /> : 'Assign'}
-                    </Button>
-                  }
-                >
-                  <ListItemIcon>
-                    <Avatar src={provider.profile.image ? `${API_URL}${provider.profile.image}` : ''}>
-                      {provider.name.charAt(0)}
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={provider.name}
-                    secondary={
-                      <>
-                        <Typography variant="body2">Skills: {provider.profile.skills?.join(', ') || 'None'}</Typography>
-                        <Typography variant="body2">City: {provider.profile.location?.details?.city || 'Not Set'}</Typography>
-                        <Typography variant="body2">Full Address: {provider.profile.location?.fullAddress || 'Not Set'}</Typography>
-                        <Typography variant="body2">Availability: {provider.profile.availability || 'Not Set'}</Typography>
-                      </>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography>No providers found for service ({selectedBooking?.service?.name}), location ({selectedBooking?.location}), or time ({selectedBooking?.scheduledTime ? new Date(selectedBooking.scheduledTime).toLocaleString() : 'N/A'}). Try adjusting the location or time.</Typography>
+
+
+  <Dialog open={assignModalOpen} onClose={() => setAssignModalOpen(false)} fullWidth maxWidth="sm">
+  <DialogTitle>Assign Provider for Booking #{selectedBooking?._id?.slice(-6).toUpperCase()}</DialogTitle>
+  <DialogContent>
+    <Typography gutterBottom><strong>Service:</strong> {selectedBooking?.service?.name}</Typography>
+    <Typography gutterBottom><strong>Customer:</strong> {selectedBooking?.customerDetails?.name}</Typography>
+    <Typography gutterBottom><strong>Location:</strong> {selectedBooking?.location}</Typography>
+    <Typography gutterBottom><strong>Time:</strong> {selectedBooking?.scheduledTime ? new Date(selectedBooking.scheduledTime).toLocaleString() : 'N/A'}</Typography>
+    <Divider sx={{ my: 2 }} />
+    <Typography variant="h6">Suitable Providers</Typography>
+    {console.log('Rendering providers:', { suitableProviders, loadingProviders })}
+    {loadingProviders ? (
+      <CircularProgress sx={{ display: 'block', mx: 'auto', my: 2 }} />
+    ) : suitableProviders.length > 0 ? (
+      <List>
+        {suitableProviders.map(provider => (
+          <ListItem
+            key={provider._id}
+            secondaryAction={
               <Button
-                variant="outlined"
-                sx={{ mt: 2 }}
-                onClick={() => handleOpenAssignModal(selectedBooking)}
+                edge="end"
+                variant="contained"
+                disabled={assigning}
+                onClick={() => handleAssignProvider(provider._id)}
               >
-                Retry
+                {assigning ? <CircularProgress size={24} /> : 'Assign'}
               </Button>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAssignModalOpen(false)} disabled={assigning}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
+            }
+          >
+            <ListItemIcon>
+              <Avatar src={provider.profile.image ? `${API_URL}${provider.profile.image}` : ''}>
+                {provider.name.charAt(0)}
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText
+              primary={provider.name}
+              secondary={
+                <>
+                  <Typography variant="body2">Skills: {provider.profile.skills?.join(', ') || 'None'}</Typography>
+                  <Typography variant="body2">City: {provider.profile.location?.details?.city || 'Not Set'}</Typography>
+                  <Typography variant="body2">Full Address: {provider.profile.location?.fullAddress || 'Not Set'}</Typography>
+                  <Typography variant="body2">Availability: {provider.profile.availability || 'Not Set'}</Typography>
+                </>
+              }
+            />
+          </ListItem>
+        ))}
+      </List>
+    ) : (
+      <Box sx={{ mt: 2, textAlign: 'center' }}>
+        <Typography>No providers found for service ({selectedBooking?.service?.name}), location ({selectedBooking?.location}), or time ({selectedBooking?.scheduledTime ? new Date(selectedBooking.scheduledTime).toLocaleString() : 'N/A'}). Try adjusting the location or time.</Typography>
+        <Button
+          variant="outlined"
+          sx={{ mt: 2 }}
+          onClick={() => handleOpenAssignModal(selectedBooking)}
+        >
+          Retry
+        </Button>
+      </Box>
+    )}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setAssignModalOpen(false)} disabled={assigning}>Cancel</Button>
+  </DialogActions>
+</Dialog>
 
       <Dialog open={confirmDialogOpen} onClose={handleCloseConfirmDialog} fullWidth maxWidth="xs">
         <DialogTitle>Confirm Provider Assignment</DialogTitle>

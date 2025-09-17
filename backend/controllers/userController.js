@@ -6,6 +6,7 @@ const path = require('path');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 
+
 const storage = multer.diskStorage({
   destination: './uploads/',
   filename: (req, file, cb) => {
@@ -14,7 +15,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
+/* 
 const convertToCity = async (location) => {
   if (!location || typeof location !== 'string') {
     return {
@@ -115,7 +116,8 @@ const convertToCity = async (location) => {
       postalCode: ''
     }
   };
-};
+}; */
+
 
 const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
@@ -152,7 +154,162 @@ const getProfile = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+const convertToCity = async (address) => {
+  // Assuming convertToCity is defined elsewhere and returns { fullAddress, details }
+  // Placeholder implementation for reference
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+    );
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const addressComponents = response.data.results[0].address_components;
+      return {
+        fullAddress: address,
+        details: {
+          streetNumber: addressComponents.find(comp => comp.types.includes('street_number'))?.long_name || '',
+          street: addressComponents.find(comp => comp.types.includes('route'))?.long_name || '',
+          city: addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '',
+          state: addressComponents.find(comp => comp.types.includes('administrative_area_level_1'))?.long_name || '',
+          country: addressComponents.find(comp => comp.types.includes('country'))?.long_name || '',
+          postalCode: addressComponents.find(comp => comp.types.includes('postal_code'))?.long_name || ''
+        }
+      };
+    }
+    return { fullAddress: address, details: {} };
+  } catch (error) {
+    console.error(`[convertToCity] Geocoding error for address ${address}: ${error.message}`);
+    return { fullAddress: address, details: {} };
+  }
+};
+
 const updateProfile = [
+  upload.single('profileImage'),
+  asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const name = req.body.name ? req.body.name.trim() : currentUser.name;
+    const phone = req.body.phone || currentUser.phone;
+    let locationInput = req.body.location;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    let location = currentUser.profile?.location || {
+      fullAddress: '',
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
+    if (locationInput) {
+      console.log('Location input received in updateProfile:', locationInput);
+      if (typeof locationInput === 'string') {
+        try {
+          locationInput = JSON.parse(locationInput);
+        } catch (e) {
+          // Treat as string address
+        }
+      }
+      let geocodedLocation;
+      if (typeof locationInput === 'string') {
+        geocodedLocation = await convertToCity(locationInput);
+      } else if (locationInput.fullAddress && typeof locationInput.fullAddress === 'string') {
+        geocodedLocation = await convertToCity(locationInput.fullAddress);
+        // Merge any provided details
+        if (locationInput.details) {
+          geocodedLocation.details = {
+            streetNumber: locationInput.details.streetNumber || geocodedLocation.details.streetNumber,
+            street: locationInput.details.street || geocodedLocation.details.street,
+            city: locationInput.details.city || geocodedLocation.details.city,
+            state: locationInput.details.state || geocodedLocation.details.state,
+            country: locationInput.details.country || geocodedLocation.details.country,
+            postalCode: locationInput.details.postalCode || geocodedLocation.details.postalCode
+          };
+        }
+      } else {
+        geocodedLocation = { ...location, ...locationInput };
+      }
+
+      // Geocode for coordinates
+      try {
+        const response = await axios.get(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(geocodedLocation.fullAddress)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        );
+        if (response.data.status === 'OK' && response.data.results.length > 0) {
+          const { lat, lng } = response.data.results[0].geometry.location;
+          geocodedLocation.coordinates = { lat, lng };
+          console.log(`[updateProfile] Geocoded coordinates for ${userId}: lat=${lat}, lng=${lng}`);
+        } else {
+          console.log(`[updateProfile] Geocoding failed for address: ${geocodedLocation.fullAddress}`);
+        }
+      } catch (error) {
+        console.error(`[updateProfile] Geocoding error for ${geocodedLocation.fullAddress}: ${error.message}`);
+      }
+
+      location = geocodedLocation;
+      console.log('Mapped location for update:', location);
+    }
+
+    const updateData = {
+      name,
+      phone,
+      profile: {
+        ...currentUser.profile,
+        location,
+        image: currentUser.profile?.image || '/images/default-user.png',
+        skills: currentUser.profile?.skills || [],
+        availability: currentUser.profile?.availability || 'Unavailable',
+        status: currentUser.profile?.status || 'active',
+        feedback: currentUser.profile?.feedback || [],
+        bookedServices: currentUser.profile?.bookedServices || [],
+        appointments: currentUser.profile?.appointments || []
+      }
+    };
+
+    if (req.body.skills) {
+      updateData.profile.skills = req.body.skills.split(',').map(skill => skill.trim());
+    }
+    if (req.body.availability) {
+      updateData.profile.availability = req.body.availability;
+    }
+    if (req.file) {
+      updateData.profile.image = `/uploads/${req.file.filename}`;
+    }
+
+    console.log('Updating profile with data:', updateData);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
+
+    console.log('Profile Updated Successfully:', {
+      userId: updatedUser._id,
+      name: updatedUser.name,
+      profileExists: !!updatedUser.profile,
+      profileImage: updatedUser.profile?.image || '/images/default-user.png',
+      appointments: updatedUser.profile.appointments.length,
+      location: updatedUser.profile?.location
+    });
+
+    if (global.io) {
+      global.io.to(userId.toString()).emit('userUpdated', updatedUser);
+    }
+
+    res.json(updatedUser);
+  }),
+];
+
+
+/* const updateProfile = [
   upload.single('profileImage'),
   asyncHandler(async (req, res) => {
     const userId = req.user._id;
@@ -254,7 +411,7 @@ const updateProfile = [
 
     res.json(updatedUser);
   }),
-];
+]; */
 
 const toggleStatus = asyncHandler(async (req, res) => {
   const userId = req.params.userId;

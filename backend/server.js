@@ -21,6 +21,7 @@ const appointmentRoutes = require('./routes/appointments');
 const contactRoutes = require('./routes/contact');
 const newsletterRoutes = require('./routes/newsletter');
 const faqRoutes = require('./routes/faq');
+const chatingRoutes = require('./routes/chatingRoutes');
 const { simulateLocationUpdate } = require('./controllers/bookingController');
 const { handleStripeWebhook } = require('./controllers/paymentController');
 
@@ -65,6 +66,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/faqs', faqRoutes);
+app.use('/api/chat', chatingRoutes);
 // Catch-all for undefined routes
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found', requestedUrl: req.url });

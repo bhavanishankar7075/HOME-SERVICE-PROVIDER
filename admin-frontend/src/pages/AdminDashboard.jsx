@@ -294,6 +294,7 @@ const AdminDashboard = () => {
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/providers')}><ListItemIcon sx={{ color: '#fff' }}><People /></ListItemIcon><ListItemText primary="Providers" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/customers')}><ListItemIcon sx={{ color: '#fff' }}><People /></ListItemIcon><ListItemText primary="Customers" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/logs')}><ListItemIcon sx={{ color: '#fff' }}><Description /></ListItemIcon><ListItemText primary="Activity Logs" sx={{color: 'white'}}/></ListItem>
+      <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/chats')}><ListItemIcon sx={{ color: '#fff' }}><Description /></ListItemIcon><ListItemText primary="Chats" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => setShowSettings(true)}><ListItemIcon sx={{ color: '#fff' }}><Settings /></ListItemIcon><ListItemText primary="Settings" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={handleLogout}><ListItemIcon sx={{ color: '#fff' }}><Logout /></ListItemIcon><ListItemText primary="Logout" sx={{color: 'white'}}/></ListItem>
     </List>

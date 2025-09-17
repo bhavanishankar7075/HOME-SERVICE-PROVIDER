@@ -11,6 +11,15 @@ const bookingSchema = new mongoose.Schema({
   },
   scheduledTime: { type: Date, required: true },
   location: { type: String, required: true },
+    coordinates: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'assigned', 'in-progress', 'completed', 'cancelled', 'rejected'],
+    default: 'pending',
+  },
   totalPrice: { type: Number, required: true },
   paymentDetails: {
     method: { type: String, enum: ['COD', 'Stripe'], required: true },
