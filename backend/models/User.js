@@ -30,12 +30,12 @@ const userSchema = new mongoose.Schema({
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     feedback: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feedback', default: [] }],
     bookedServices: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Service', default: [] }],
-    appointments: [{
+    /* appointments: [{
       bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
       serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
       scheduledTime: { type: Date, required: true },
       status: { type: String, enum: ['pending', 'assigned', 'in-progress', 'completed', 'cancelled', 'rejected'], default: 'pending' }
-    }],
+    }], */
   },
 }, { timestamps: true });
 

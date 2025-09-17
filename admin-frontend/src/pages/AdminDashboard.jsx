@@ -39,8 +39,8 @@ const AdminDashboard = () => {
   const [categoryStats, setCategoryStats] = useState({});
   const [monthlyRevenue, setMonthlyRevenue] = useState({});
   const [users, setUsers] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+/*   const [appointments, setAppointments] = useState([]);
+ */  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
   const [adminName, setAdminName] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -69,8 +69,8 @@ const AdminDashboard = () => {
         categoryResponse,
         monthlyRevenueResponse,
         usersResponse,
-        appointmentsResponse,
-      ] = await Promise.all([
+/*         appointmentsResponse,
+ */      ] = await Promise.all([
         axios.get(`${API_URL}/api/dashboard/revenue`, config),
         axios.get(`${API_URL}/api/bookings/all-bookings`, config).catch(err => {
           console.error('Error fetching bookings:', err.response?.status, err.response?.data);
@@ -81,8 +81,8 @@ const AdminDashboard = () => {
         axios.get(`${API_URL}/api/dashboard/services/category-stats`, config),
         axios.get(`${API_URL}/api/dashboard/bookings/monthly-revenue`, config),
         axios.get(`${API_URL}/api/admin/users`, config),
-        axios.get(`${API_URL}/api/admin/appointments`, config),
-      ]);
+/*         axios.get(`${API_URL}/api/admin/appointments`, config),
+ */      ]);
       
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
       setAdminName(decodedToken.name || 'Admin');
@@ -96,10 +96,10 @@ const AdminDashboard = () => {
       setCategoryStats(categoryResponse.data || {});
       setMonthlyRevenue(monthlyRevenueResponse.data || {});
       setUsers(usersResponse.data || []);
-      setAppointments(appointmentsResponse.data || []);
+/*       setAppointments(appointmentsResponse.data || []);
       setNewBookingCount(appointmentsResponse.data.filter(app => app.status === 'pending').length);
       console.log('New booking count updated:', appointmentsResponse.data.filter(app => app.status === 'pending').length);
-    } catch (error) {
+ */    } catch (error) {
       console.error('Fetch data error:', error.message, error.response?.data);
       setMessage({ open: true, text: 'Error fetching dashboard data.', severity: 'error' });
     } finally {
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
     a.click();
   };
 
-  const handleExportAppointments = () => {
+ /*  const handleExportAppointments = () => {
     const csv = [
       'Provider,Customer,Service,Scheduled Time,Status',
       ...appointments.map(app => `"${app.providerId?.name || ''}","${app.customerId?.name || ''}","${app.serviceId?.name || ''}","${new Date(app.scheduledTime).toISOString() || ''}","${app.status || ''}"`).join('\n'),
@@ -211,7 +211,7 @@ const AdminDashboard = () => {
     a.href = url;
     a.download = 'appointments_export.csv';
     a.click();
-  };
+  }; */
   
   const pieChartData = {
     labels: Object.keys(categoryStats).length ? Object.keys(categoryStats) : ['No Data'],
@@ -295,6 +295,7 @@ const AdminDashboard = () => {
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/customers')}><ListItemIcon sx={{ color: '#fff' }}><People /></ListItemIcon><ListItemText primary="Customers" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/logs')}><ListItemIcon sx={{ color: '#fff' }}><Description /></ListItemIcon><ListItemText primary="Activity Logs" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/chats')}><ListItemIcon sx={{ color: '#fff' }}><Description /></ListItemIcon><ListItemText primary="Chats" sx={{color: 'white'}}/></ListItem>
+      <ListItem button sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/reset/password')}><ListItemIcon sx={{ color: '#fff' }}><Description /></ListItemIcon><ListItemText primary="Reset Password" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={() => setShowSettings(true)}><ListItemIcon sx={{ color: '#fff' }}><Settings /></ListItemIcon><ListItemText primary="Settings" sx={{color: 'white'}}/></ListItem>
       <ListItem button sx={{ cursor: 'pointer' }} onClick={handleLogout}><ListItemIcon sx={{ color: '#fff' }}><Logout /></ListItemIcon><ListItemText primary="Logout" sx={{color: 'white'}}/></ListItem>
     </List>
@@ -339,8 +340,8 @@ const AdminDashboard = () => {
                   <Grid item xs={12} sm={6} md={3}><Paper sx={{ p: 2, textAlign: 'center' }}>Total Feedbacks<Typography variant="h5">{feedbackCount}</Typography></Paper></Grid>
                   <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, textAlign: 'center' }}>Active Providers<Typography variant="h4">{users.filter(u => u.role === 'provider' && u.profile?.status === 'active').length}</Typography></Paper></Grid>
                   <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, textAlign: 'center' }}>Active Customers<Typography variant="h4">{users.filter(u => u.role === 'customer').length}</Typography></Paper></Grid>
-                  <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, textAlign: 'center' }}>Pending Appointments<Typography variant="h4">{appointments.filter(app => app.status === 'pending').length}</Typography></Paper></Grid>
-                  
+{/*                   <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, textAlign: 'center' }}>Pending Appointments<Typography variant="h4">{appointments.filter(app => app.status === 'pending').length}</Typography></Paper></Grid>
+ */}                  
                   <Grid item xs={12} lg={6}>
                     <Paper sx={{p: 2, borderRadius: 2}}><Typography variant="h6">Category Distribution</Typography><ChartContainer><Pie data={pieChartData} options={{responsive: true, maintainAspectRatio: false}} /></ChartContainer></Paper>
                   </Grid>
@@ -351,8 +352,8 @@ const AdminDashboard = () => {
                   <Grid item xs={12}>
                       <Paper sx={{p: 2, display: 'flex', gap: 2, justifyContent: 'center'}}>
                           <Button variant="contained" onClick={handleExportUsers}>Export Users</Button>
-                          <Button variant="contained" onClick={handleExportAppointments}>Export Appointments</Button>
-                      </Paper>
+{/*                           <Button variant="contained" onClick={handleExportAppointments}>Export Appointments</Button>
+ */}                      </Paper>
                   </Grid>
                 </Grid>
               )

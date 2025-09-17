@@ -17,8 +17,8 @@ const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
 const serviceRoutes = require('./routes/services');
 const dashboardRoutes = require('./routes/dashboard');
-const appointmentRoutes = require('./routes/appointments');
-const contactRoutes = require('./routes/contact');
+/* const appointmentRoutes = require('./routes/appointments');
+ */const contactRoutes = require('./routes/contact');
 const newsletterRoutes = require('./routes/newsletter');
 const faqRoutes = require('./routes/faq');
 const chatingRoutes = require('./routes/chatingRoutes');
@@ -61,8 +61,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/contact', contactRoutes);
+/* app.use('/api/appointments', appointmentRoutes);
+ */app.use('/api/contact', contactRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/faqs', faqRoutes);
@@ -110,27 +110,27 @@ io.on('connection', (socket) => {
       const Booking = require('./models/Booking');
       const Service = require('./models/Service');
       const Feedback = require('./models/Feedback');
-      const Appointment = require('./models/Appointment');
-      
+/*       const Appointment = require('./models/Appointment');
+ */      
       const revenue = await Booking.aggregate([
         { $match: { status: 'completed' } },
         { $group: { _id: null, total: { $sum: '$totalPrice' } } },
       ]);
       socket.emit('revenueUpdated', { total: revenue[0]?.total || 0 });
 
-      const [ serviceCount, feedbackCount, paymentCount, appointmentCount] = await Promise.all([
+      const [ serviceCount, feedbackCount, paymentCount, ] = await Promise.all([
         Service.countDocuments(),
         Feedback.countDocuments(),
         Booking.countDocuments({ 'paymentDetails.status': 'completed' }),
-        Appointment.countDocuments(),
-      ]);
+/*         Appointment.countDocuments(),
+ */      ]);
       socket.emit('servicesUpdated', { count: serviceCount });
       socket.emit('feedbacksUpdated', { count: feedbackCount });
       socket.emit('paymentsUpdated', { count: paymentCount });
-      socket.emit('appointmentsUpdated', { count: appointmentCount });
-
-      const appointments = await Appointment.find().lean();
-      socket.emit('appointmentUpdated', appointments);
+/*       socket.emit('appointmentsUpdated', { count: appointmentCount });
+ */
+     /*  const appointments = await Appointment.find().lean();
+      socket.emit('appointmentUpdated', appointments); */
     } catch (error) {
       console.error(`Error emitting initial data:`, error.message);
     }
@@ -161,9 +161,9 @@ io.on('connection', (socket) => {
   });
   socket.on('userUpdated', (data) => { if (data.userId) { socket.to(data.userId.toString()).emit('userUpdated', data.profile); } });
   socket.on('userDeleted', (data) => { if (data.userId) { socket.to(data.userId.toString()).emit('userDeleted', data); } });
-  socket.on('newAppointment', (data) => { if (data.appointment) { socket.to(data.appointment.providerId.toString()).emit('newAppointment', data.appointment); io.to('admin_room').emit('newAdminNotification', { message: `New appointment scheduled with ${data.appointment.providerId}` }); } });
-  socket.on('appointmentDeleted', (data) => { if (data.appointmentId) { socket.to(data.appointment.providerId.toString()).emit('appointmentDeleted', data); } });
-  socket.on('accountDeleted', (data) => { console.log('Account deleted event:', data.message); });
+/*   socket.on('newAppointment', (data) => { if (data.appointment) { socket.to(data.appointment.providerId.toString()).emit('newAppointment', data.appointment); io.to('admin_room').emit('newAdminNotification', { message: `New appointment scheduled with ${data.appointment.providerId}` }); } });
+ *//*   socket.on('appointmentDeleted', (data) => { if (data.appointmentId) { socket.to(data.appointment.providerId.toString()).emit('appointmentDeleted', data); } });
+ */  socket.on('accountDeleted', (data) => { console.log('Account deleted event:', data.message); });
 });
 
 const PORT = process.env.PORT || 5000;

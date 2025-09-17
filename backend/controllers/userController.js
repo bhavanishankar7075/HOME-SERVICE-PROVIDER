@@ -1,3 +1,4 @@
+
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Message = require('../models/Message');
@@ -5,7 +6,6 @@ const multer = require('multer');
 const path = require('path');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
-
 
 const storage = multer.diskStorage({
   destination: './uploads/',
@@ -15,112 +15,46 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-/* 
-const convertToCity = async (location) => {
-  if (!location || typeof location !== 'string') {
-    return {
-      fullAddress: '',
-      details: {
-        streetNumber: '',
-        street: '',
-        city: '',
-        state: '',
-        country: '',
-        postalCode: ''
-      }
-    };
-  }
 
-  // Check if location is coordinates (lat,lng)
-  const [lat, lng] = location.split(',').map(Number);
-  if (!isNaN(lat) && !isNaN(lng)) {
-    try {
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=street_address|locality&key=${process.env.GOOGLE_MAPS_API_KEY}`
-      );
-      if (response.data.status === 'OK' && response.data.results.length > 0) {
-        const address = response.data.results.find(result => result.types.includes('street_address'))
-          || response.data.results.find(result => result.types.includes('locality'))
-          || response.data.results[0];
-        const components = address.address_components || [];
-        const details = {
-          streetNumber: components.find(c => c.types.includes('street_number'))?.long_name || '',
-          street: components.find(c => c.types.includes('route'))?.long_name || '',
-          city: components.find(c => c.types.includes('locality'))?.long_name ||
-                components.find(c => c.types.includes('administrative_area_level_2'))?.long_name || '',
-          state: components.find(c => c.types.includes('administrative_area_level_1'))?.long_name || '',
-          country: components.find(c => c.types.includes('country'))?.long_name || '',
-          postalCode: components.find(c => c.types.includes('postal_code'))?.long_name || ''
-        };
-        console.log('Converted coordinates to location:', { fullAddress: address.formatted_address, details });
-        return {
-          fullAddress: address.formatted_address || '',
-          details
-        };
-      }
-    } catch (error) {
-      console.error('Geocoding error for coordinates:', error.message);
-    }
-  }
-
-  // Handle string address (e.g., from Navbar.jsx)
+const convertToCity = async (address) => {
   try {
     const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
     );
     if (response.data.status === 'OK' && response.data.results.length > 0) {
-      const address = response.data.results[0];
-      const components = address.address_components || [];
-      const details = {
-        streetNumber: components.find(c => c.types.includes('street_number'))?.long_name || '',
-        street: components.find(c => c.types.includes('route'))?.long_name || '',
-        city: components.find(c => c.types.includes('locality'))?.long_name ||
-              components.find(c => c.types.includes('administrative_area_level_2'))?.long_name || '',
-        state: components.find(c => c.types.includes('administrative_area_level_1'))?.long_name || '',
-        country: components.find(c => c.types.includes('country'))?.long_name || '',
-        postalCode: components.find(c => c.types.includes('postal_code'))?.long_name || ''
-      };
-      console.log('Converted address to location:', { fullAddress: address.formatted_address, details });
+      const addressComponents = response.data.results[0].address_components;
+      const { lat, lng } = response.data.results[0].geometry.location;
       return {
-        fullAddress: address.formatted_address || location,
-        details
+        fullAddress: response.data.results[0].formatted_address || address,
+        details: {
+          streetNumber: addressComponents.find(comp => comp.types.includes('street_number'))?.long_name || '',
+          street: addressComponents.find(comp => comp.types.includes('route'))?.long_name || '',
+          city: addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '',
+          state: addressComponents.find(comp => comp.types.includes('administrative_area_level_1'))?.long_name || '',
+          country: addressComponents.find(comp => comp.types.includes('country'))?.long_name || '',
+          postalCode: addressComponents.find(comp => comp.types.includes('postal_code'))?.long_name || ''
+        },
+        coordinates: { lat, lng }
       };
     }
+    console.log(`[convertToCity] Geocoding failed for address: ${address}`);
+    return { 
+      fullAddress: address, 
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
   } catch (error) {
-    console.error('Geocoding error for address:', error.message);
+    console.error(`[convertToCity] Geocoding error for address ${address}: ${error.message}`);
+    return { 
+      fullAddress: address, 
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
   }
-
-  // Fallback: Parse city from location string
-  const locationParts = location.split(',').map(part => part.trim().toLowerCase());
-  const nearbyCities = {
-    'madhuravada': 'Madhuravada',
-    'visakhapatnam': 'Visakhapatnam'
-    // Add more as needed
-  };
-  let city = '';
-  for (const key of Object.keys(nearbyCities)) {
-    if (locationParts.some(part => part.includes(key))) {
-      city = nearbyCities[key];
-      break;
-    }
-  }
-  console.log('Fallback city parsed:', { city, location });
-  return {
-    fullAddress: location,
-    details: {
-      streetNumber: '',
-      street: '',
-      city,
-      state: '',
-      country: '',
-      postalCode: ''
-    }
-  };
-}; */
-
+};
 
 const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
+  const user = await User.findById(req.user._id).select('-password');
 
   if (!user) {
     res.status(404);
@@ -131,8 +65,7 @@ const getProfile = asyncHandler(async (req, res) => {
     userId: user._id,
     name: user.name,
     profileExists: !!user.profile,
-    profileImage: user.profile?.image || '/images/default-user.png',
-    appointments: user.profile.appointments.length
+    profileImage: user.profile?.image || '/images/default-user.png'
   });
 
   res.json({
@@ -143,46 +76,19 @@ const getProfile = asyncHandler(async (req, res) => {
     role: user.role,
     profile: user.profile || {
       image: '/images/default-user.png',
-      location: { fullAddress: '', details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' } },
+      location: { 
+        fullAddress: '', 
+        details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+        coordinates: { lat: null, lng: null }
+      },
       skills: [],
       availability: 'Unavailable',
       status: 'active',
       feedback: [],
-      bookedServices: [],
-      appointments: []
+      bookedServices: []
     }
   });
 });
-
-
-
-const convertToCity = async (address) => {
-  // Assuming convertToCity is defined elsewhere and returns { fullAddress, details }
-  // Placeholder implementation for reference
-  try {
-    const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-    );
-    if (response.data.status === 'OK' && response.data.results.length > 0) {
-      const addressComponents = response.data.results[0].address_components;
-      return {
-        fullAddress: address,
-        details: {
-          streetNumber: addressComponents.find(comp => comp.types.includes('street_number'))?.long_name || '',
-          street: addressComponents.find(comp => comp.types.includes('route'))?.long_name || '',
-          city: addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '',
-          state: addressComponents.find(comp => comp.types.includes('administrative_area_level_1'))?.long_name || '',
-          country: addressComponents.find(comp => comp.types.includes('country'))?.long_name || '',
-          postalCode: addressComponents.find(comp => comp.types.includes('postal_code'))?.long_name || ''
-        }
-      };
-    }
-    return { fullAddress: address, details: {} };
-  } catch (error) {
-    console.error(`[convertToCity] Geocoding error for address ${address}: ${error.message}`);
-    return { fullAddress: address, details: {} };
-  }
-};
 
 const updateProfile = [
   upload.single('profileImage'),
@@ -217,43 +123,23 @@ const updateProfile = [
           // Treat as string address
         }
       }
-      let geocodedLocation;
       if (typeof locationInput === 'string') {
-        geocodedLocation = await convertToCity(locationInput);
+        location = await convertToCity(locationInput);
       } else if (locationInput.fullAddress && typeof locationInput.fullAddress === 'string') {
-        geocodedLocation = await convertToCity(locationInput.fullAddress);
-        // Merge any provided details
+        location = await convertToCity(locationInput.fullAddress);
         if (locationInput.details) {
-          geocodedLocation.details = {
-            streetNumber: locationInput.details.streetNumber || geocodedLocation.details.streetNumber,
-            street: locationInput.details.street || geocodedLocation.details.street,
-            city: locationInput.details.city || geocodedLocation.details.city,
-            state: locationInput.details.state || geocodedLocation.details.state,
-            country: locationInput.details.country || geocodedLocation.details.country,
-            postalCode: locationInput.details.postalCode || geocodedLocation.details.postalCode
+          location.details = {
+            streetNumber: locationInput.details.streetNumber || location.details.streetNumber,
+            street: locationInput.details.street || location.details.street,
+            city: locationInput.details.city || location.details.city,
+            state: locationInput.details.state || location.details.state,
+            country: locationInput.details.country || location.details.country,
+            postalCode: locationInput.details.postalCode || location.details.postalCode
           };
         }
       } else {
-        geocodedLocation = { ...location, ...locationInput };
+        location = { ...location, ...locationInput };
       }
-
-      // Geocode for coordinates
-      try {
-        const response = await axios.get(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(geocodedLocation.fullAddress)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-        );
-        if (response.data.status === 'OK' && response.data.results.length > 0) {
-          const { lat, lng } = response.data.results[0].geometry.location;
-          geocodedLocation.coordinates = { lat, lng };
-          console.log(`[updateProfile] Geocoded coordinates for ${userId}: lat=${lat}, lng=${lng}`);
-        } else {
-          console.log(`[updateProfile] Geocoding failed for address: ${geocodedLocation.fullAddress}`);
-        }
-      } catch (error) {
-        console.error(`[updateProfile] Geocoding error for ${geocodedLocation.fullAddress}: ${error.message}`);
-      }
-
-      location = geocodedLocation;
       console.log('Mapped location for update:', location);
     }
 
@@ -268,8 +154,7 @@ const updateProfile = [
         availability: currentUser.profile?.availability || 'Unavailable',
         status: currentUser.profile?.status || 'active',
         feedback: currentUser.profile?.feedback || [],
-        bookedServices: currentUser.profile?.bookedServices || [],
-        appointments: currentUser.profile?.appointments || []
+        bookedServices: currentUser.profile?.bookedServices || []
       }
     };
 
@@ -289,14 +174,13 @@ const updateProfile = [
       userId,
       { $set: updateData },
       { new: true, runValidators: true }
-    ).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
+    ).select('-password');
 
     console.log('Profile Updated Successfully:', {
       userId: updatedUser._id,
       name: updatedUser.name,
       profileExists: !!updatedUser.profile,
       profileImage: updatedUser.profile?.image || '/images/default-user.png',
-      appointments: updatedUser.profile.appointments.length,
       location: updatedUser.profile?.location
     });
 
@@ -305,113 +189,8 @@ const updateProfile = [
     }
 
     res.json(updatedUser);
-  }),
+  })
 ];
-
-
-/* const updateProfile = [
-  upload.single('profileImage'),
-  asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    
-    const currentUser = await User.findById(userId);
-    if (!currentUser) {
-      res.status(404);
-      throw new Error('User not found');
-    }
-
-    const name = req.body.name ? req.body.name.trim() : currentUser.name;
-    const phone = req.body.phone || currentUser.phone;
-    let locationInput = req.body.location;
-
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ message: 'Name is required' });
-    }
-
-    let location = currentUser.profile?.location || {
-      fullAddress: '',
-      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' }
-    };
-    if (locationInput) {
-      console.log('Location input received in updateProfile:', locationInput);
-      if (typeof locationInput === 'string') {
-        try {
-          locationInput = JSON.parse(locationInput);
-        } catch (e) {
-          // Treat as string address
-        }
-      }
-      if (typeof locationInput === 'string') {
-        location = await convertToCity(locationInput);
-      } else if (locationInput.fullAddress && typeof locationInput.fullAddress === 'string') {
-        location = await convertToCity(locationInput.fullAddress);
-        // Merge any provided details
-        if (locationInput.details) {
-          location.details = {
-            streetNumber: locationInput.details.streetNumber || location.details.streetNumber,
-            street: locationInput.details.street || location.details.street,
-            city: locationInput.details.city || location.details.city,
-            state: locationInput.details.state || location.details.state,
-            country: locationInput.details.country || location.details.country,
-            postalCode: locationInput.details.postalCode || location.details.postalCode
-          };
-        }
-      } else {
-        location = { ...location, ...locationInput };
-      }
-    }
-    console.log('Mapped location for update:', location);
-
-    const updateData = {
-      name,
-      phone,
-      profile: {
-        ...currentUser.profile,
-        location,
-        image: currentUser.profile?.image || '/images/default-user.png',
-        skills: currentUser.profile?.skills || [],
-        availability: currentUser.profile?.availability || 'Unavailable',
-        status: currentUser.profile?.status || 'active',
-        feedback: currentUser.profile?.feedback || [],
-        bookedServices: currentUser.profile?.bookedServices || [],
-        appointments: currentUser.profile?.appointments || []
-      }
-    };
-
-    if (req.body.skills) {
-      updateData.profile.skills = req.body.skills.split(',').map(skill => skill.trim());
-    }
-    if (req.body.availability) {
-      updateData.profile.availability = req.body.availability;
-    }
-    if (req.file) {
-      updateData.profile.image = `/uploads/${req.file.filename}`;
-    }
-
-    console.log('Updating profile with data:', updateData);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('-password').populate('profile.appointments.bookingId profile.feedback profile.bookedServices');
-
-    console.log('Profile Updated Successfully:', {
-      userId: updatedUser._id,
-      name: updatedUser.name,
-      profileExists: !!updatedUser.profile,
-      profileImage: updatedUser.profile?.image || '/images/default-user.png',
-      appointments: updatedUser.profile.appointments.length,
-      location: updatedUser.profile?.location
-    });
-
-    if (global.io) {
-      global.io.to(userId.toString()).emit('userUpdated', updatedUser);
-    }
-
-    res.json(updatedUser);
-  }),
-]; */
 
 const toggleStatus = asyncHandler(async (req, res) => {
   const userId = req.params.userId;
@@ -469,13 +248,13 @@ const changePassword = asyncHandler(async (req, res) => {
     throw new Error('New password must be at least 6 characters long');
   }
 
-  const isMatch = await user.matchPassword(currentPassword);
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
     res.status(400);
     throw new Error('Current password is incorrect');
   }
 
-  user.password = newPassword;
+  user.password = await bcrypt.hash(newPassword, 10);
   await user.save();
 
   res.status(200).json({ message: 'Password changed successfully' });
@@ -508,7 +287,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
   let userLocation = {
     fullAddress: '',
-    details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' }
+    details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+    coordinates: { lat: null, lng: null }
   };
   if (location) {
     userLocation = await convertToCity(location);
@@ -517,7 +297,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     name,
     email,
-    password,
+    password: await bcrypt.hash(password, 10),
     phone,
     role,
     profile: {
@@ -527,17 +307,15 @@ const registerUser = asyncHandler(async (req, res) => {
       availability: 'Unavailable',
       status: 'active',
       feedback: [],
-      bookedServices: [],
-      appointments: []
-    },
+      bookedServices: []
+    }
   });
 
   console.log('User Registered:', {
     userId: user._id,
     name: user.name,
     profileExists: !!user.profile,
-    profileImage: user.profile.image,
-    appointments: user.profile.appointments.length
+    profileImage: user.profile.image
   });
 
   if (user) {
@@ -566,18 +344,26 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user.profile) {
     user.profile = {
       image: '/images/default-user.png',
-      location: { fullAddress: '', details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' } },
+      location: { 
+        fullAddress: '', 
+        details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+        coordinates: { lat: null, lng: null }
+      },
       skills: [],
       availability: 'Unavailable',
       status: 'active',
       feedback: [],
-      bookedServices: [],
-      appointments: []
+      bookedServices: []
     };
     await user.save();
   }
 
-  if (await user.matchPassword(password)) {
+  if (await bcrypt.compare(password, user.password)) {
+    const token = require('jsonwebtoken').sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
     res.json({
       _id: user._id,
       name: user.name,
@@ -585,7 +371,7 @@ const loginUser = asyncHandler(async (req, res) => {
       phone: user.phone,
       role: user.role,
       profile: user.profile,
-      token: 'dummy-token',
+      token
     });
   } else {
     res.status(401);
@@ -606,7 +392,7 @@ const contactAdmin = asyncHandler(async (req, res) => {
     customerId,
     providerId,
     providerName,
-    message,
+    message
   });
 
   if (newMessage) {
@@ -644,6 +430,7 @@ module.exports = {
   contactAdmin,
   getCustomerMessages
 };
+
 
 
 

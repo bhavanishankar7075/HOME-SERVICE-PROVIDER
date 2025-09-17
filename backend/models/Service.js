@@ -12,6 +12,7 @@ const serviceSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   image: { type: String, default: '' },
   additionalImages: { type: [String], default: [] },
+  
   offer: { type: String, default: '' },
   deal: { type: String, default: '' },
   availableSlots: { 

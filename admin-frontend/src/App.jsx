@@ -10,14 +10,15 @@ import CustomerFeedbacks from './pages/CustomerFeedbacks';
 import ProviderManagement from './pages/ProviderManagement';
 import { useSelector } from 'react-redux';
 import CustomerManagement from './pages/customerManagement';
-import AppointmentManagement from './pages/AppointmentManagement';
-import ActivityLogs from './pages/ActivityLogs';
+/* import AppointmentManagement from './pages/AppointmentManagement';
+ */import ActivityLogs from './pages/ActivityLogs';
 import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import BookingManagement from './pages/BookingMangement';
 import ContactMessages from './pages/ContactMessages';
 import FaqsContacts from './pages/FaqsContacts';
 import AdminChat from './pages/admin/AdminChat';
+import AdminResetPassword from './pages/AdminResetPassword';
 
 const PrivateRoute = ({ element, roles }) => {
   if (!element || !roles) {
@@ -64,9 +65,9 @@ function App() {
             path="/admin/customers"
             element={<PrivateRoute element={<CustomerManagement />} roles={['admin']} />}
           />
-          <Route
-            path="/admin/appointments"
-            element={<PrivateRoute element={<AppointmentManagement />} roles={['admin']} />}
+         <Route
+            path="/admin/reset/password"
+            element={<PrivateRoute element={<AdminResetPassword />} roles={['admin']} />}
           />
           <Route
             path="/admin/logs"

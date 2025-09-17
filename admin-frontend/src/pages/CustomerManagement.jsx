@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
@@ -54,7 +55,6 @@ const socket = io(API_URL);
 const CustomerManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ open: false, text: "", severity: "success" });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -73,10 +73,7 @@ const CustomerManagement = () => {
     setLoading(true);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const [usersResponse, appointmentsResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/admin/users`, config),
-        axios.get(`${API_URL}/api/admin/appointments`, config),
-      ]);
+      const usersResponse = await axios.get(`${API_URL}/api/admin/users`, config);
 
       setUsers(
         usersResponse.data
@@ -88,7 +85,6 @@ const CustomerManagement = () => {
               : `${API_URL}/images/default-user.png`,
           }))
       );
-      setAppointments(appointmentsResponse.data);
     } catch (error) {
       setMessage({
         open: true,
@@ -323,16 +319,6 @@ const CustomerManagement = () => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: 3 }}>
-                <Typography variant="h6" sx={{ color: "#2c5282", fontWeight: "medium" }}>
-                  Pending Appointments
-                </Typography>
-                <Typography variant="h4" sx={{ color: "#1a3c34", fontWeight: "bold" }}>
-                  {appointments.filter((app) => app.status === "pending").length}
-                </Typography>
-              </Paper>
-            </Grid>
           </Grid>
 
           <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
@@ -509,7 +495,7 @@ const CustomerManagement = () => {
               <TableBody>
                 {selectedUserFeedback.map((feedback) => (
                   <TableRow key={feedback._id}>
-                    <TableCell>{feedback.bookingId?.service?.name || "Unknown"}</TableCell>
+                    <TableCell>{feedback.service?.name || "Unknown"}</TableCell>
                     <TableCell>
                       <Rating value={feedback.rating || 0} readOnly size="small" />
                     </TableCell>
@@ -540,12 +526,20 @@ const CustomerManagement = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Service</TableCell>
+                  <TableCell>Scheduled Time</TableCell>
+                  <TableCell>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {selectedUserServices.map((service) => (
-                  <TableRow key={service._id}>
-                    <TableCell>{service.name || "Unknown"}</TableCell>
+                {selectedUserServices.map((booking) => (
+                  <TableRow key={booking._id}>
+                    <TableCell>{booking.service?.name || "Unknown"}</TableCell>
+                    <TableCell>
+                      {booking.scheduledTime
+                        ? new Date(booking.scheduledTime).toLocaleString()
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>{booking.status || "N/A"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -573,11 +567,11 @@ const CustomerManagement = () => {
             </ListItemIcon>
             <ListItemText primary="Customers" />
           </ListItem>
-          <ListItem button onClick={() => navigate("/admin/appointments")}>
+          <ListItem button onClick={() => navigate("/admin/bookings")}>
             <ListItemIcon>
               <CalendarToday />
             </ListItemIcon>
-            <ListItemText primary="Appointments" />
+            <ListItemText primary="Bookings" />
           </ListItem>
           <ListItem button onClick={() => navigate("/admin/services")}>
             <ListItemIcon>
@@ -607,6 +601,7 @@ const CustomerManagement = () => {
 };
 
 export default CustomerManagement;
+
 
 
 

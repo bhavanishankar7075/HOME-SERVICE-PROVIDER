@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
-const Appointment = require('../models/Appointment');
-const Message = require('../models/Message');
+/* const Appointment = require('../models/Appointment');
+ */const Message = require('../models/Message');
 const Service = require('../models/Service'); // <-- ADDED: Service model is needed for slot management
 const mongoose = require('mongoose');
 const Log = require('../models/Log');
@@ -159,7 +159,7 @@ exports.deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
-exports.getAppointments = asyncHandler(async (req, res) => {
+/* exports.getAppointments = asyncHandler(async (req, res) => {
   try {
     const appointments = await Appointment.find()
       .populate('providerId', 'name email profile')
@@ -235,7 +235,7 @@ exports.deleteAppointment = asyncHandler(async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error deleting appointment', error: error.message });
   }
-});
+}); */
 
 exports.toggleStatus = asyncHandler(async (req, res) => {
   try {
