@@ -75,7 +75,7 @@ html {
 
 .service-hub-logo {
   width: 200px; /* Size for service-hub-logo.png as requested */
-  height: 200px; /* Explicit height to control size as requested */
+  height: 180px; /* Explicit height to control size as requested */
   object-fit: contain; /* Ensure logo fits without distortion */
 }
 

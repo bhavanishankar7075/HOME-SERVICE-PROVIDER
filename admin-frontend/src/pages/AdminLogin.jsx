@@ -13,6 +13,276 @@ import {
   InputAdornment,
   CircularProgress,
   Link,
+  Paper, // Added Paper for card effect
+  Container, // Added Container for central alignment and max-width control
+} from '@mui/material';
+import { EmailOutlined, LockOutlined, Hub as HubIcon } from '@mui/icons-material';
+import axios from 'axios';
+
+const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000';
+import adminLoginImage from '../assets/service-hub-logo.png'; // Assuming you have an admin specific image
+
+const AdminLogin = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  // --- No changes to your existing logic ---
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    dispatch(loginStart());
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/admin-login`, { email, password });
+      const { token, user } = response.data;
+      console.log('Login response:', response.data);
+      dispatch(loginSuccess({ token, user }));
+      localStorage.setItem('token', token);
+      navigate('/admin/dashboard');
+    } catch (err) {
+      console.error('Login error:', err.response?.data || err.message);
+      dispatch(loginFailure(err.response?.data?.message || 'Failed to login. Please check your credentials.'));
+    }
+  };
+  // --- End of unchanged logic ---
+
+  return (
+    <Box
+      sx={{
+        // Outer container for the entire login page
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // Adjust minHeight to account for a fixed navbar (e.g., 64px tall)
+        minHeight: 'calc(100vh - 64px)',
+        backgroundColor: (theme) => theme.palette.grey[100], // Light background for the page
+        px: 2, // Horizontal padding for small screens
+      }}
+    >
+      {/* Container for the actual login card, limiting its max width */}
+      <Container maxWidth="md" disableGutters>
+        <Paper
+          elevation={8}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { md: '6fr 6fr' }, // Even split for admin, or you can adjust (e.g., 7fr 5fr)
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Section 1: Visual Side (Left) - Image or branded content */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' }, // Hidden on small screens
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              // Use an image for branding or keep the gradient
+              backgroundImage: `url(${adminLoginImage})`, // New: Use an image
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              // Fallback/overlay for the image text
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, rgba(3, 169, 244, 0.7) 30%, rgba(88, 86, 214, 0.7) 90%)', // Darker gradient overlay
+                zIndex: 1,
+              },
+              color: 'white',
+              textAlign: 'center',
+              p: 4,
+            }}
+          >
+            <Box sx={{ position: 'relative', zIndex: 2 }}> {/* Content on top of overlay */}
+              <HubIcon sx={{ fontSize: 80, mb: 2 }} />
+              <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                ServiceHub
+              </Typography>
+              <Typography variant="h6">Admin Control Panel</Typography>
+            </Box>
+          </Box>
+
+          {/* Section 2: Form Side (Right) */}
+          <Box
+            sx={{
+              p: { xs: 3, sm: 4, md: 5 }, // Responsive padding
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              // Removed explicit width/minHeight from this Box, as parent Grid/Paper controls size
+            }}
+          >
+            <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1, color: 'primary.main' }}>
+                Admin Login
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', mb: 3, color: 'text.secondary' }}>
+                Welcome back! Please enter your details.
+              </Typography>
+
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch(loginFailure(null))}>
+                  {error}
+                </Alert>
+              )}
+
+              <Box component="form" onSubmit={handleLogin}>
+                <Stack spacing={2}>
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    required
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailOutlined color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    label="Password"
+                    type="password" // Consider adding a show/hide password toggle like in other forms
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    required
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlined color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    disabled={loading}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 'bold',
+                      bgcolor: 'primary.main', // Using theme primary color
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                    }}
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
+                  </Button>
+                </Stack>
+              </Box>
+              {/* Centralized the "Need an account?" and "Forgot password?" links */}
+              <Stack direction="column" spacing={1} sx={{ mt: 3, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Need an account?{' '}
+                  <Link component={RouterLink} to="/admin/signup" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    Sign Up
+                  </Link>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Forgot password?{' '}
+                  <Link component={RouterLink} to="/admin/reset/password" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    Reset Password
+                  </Link>
+                </Typography>
+              </Stack>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
+};
+
+export default AdminLogin;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* import React, { useState } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Grid,
+  Stack,
+  InputAdornment,
+  CircularProgress,
+  Link,
 } from '@mui/material';
 import { EmailOutlined, LockOutlined, Hub as HubIcon } from '@mui/icons-material';
 import axios from 'axios';
@@ -45,7 +315,6 @@ const AdminLogin = () => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Grid container sx={{ minHeight: 'calc(100vh - 64px)' }}>
-        {/* Visual Side (Left) */}
         <Grid
           item
           xs={false}
@@ -69,7 +338,6 @@ const AdminLogin = () => {
           <Typography variant="h6">Admin Control Panel</Typography>
         </Grid>
 
-        {/* Form Side (Right) */}
         <Grid
           item
           xs={12}
@@ -182,7 +450,7 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default AdminLogin; */
 
 
 
