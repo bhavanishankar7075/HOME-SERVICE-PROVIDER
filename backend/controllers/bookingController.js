@@ -1505,4 +1505,3 @@ module.exports = {
   getAllBookings,
   trackService,
 };
-

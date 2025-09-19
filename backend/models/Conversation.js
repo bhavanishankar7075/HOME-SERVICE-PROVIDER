@@ -1,4 +1,3 @@
-// backend/models/Conversation.js
 const mongoose = require('mongoose');
 
 const conversationSchema = new mongoose.Schema({
@@ -12,6 +11,10 @@ const conversationSchema = new mongoose.Schema({
     type: String,
     enum: ['open', 'closed', 'needs_attention'],
     default: 'open',
+  },
+  adminActive: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,

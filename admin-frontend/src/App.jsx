@@ -19,6 +19,7 @@ import ContactMessages from './pages/ContactMessages';
 import FaqsContacts from './pages/FaqsContacts';
 import AdminChat from './pages/admin/AdminChat';
 import AdminResetPassword from './pages/AdminResetPassword';
+import SubscriptionDashboard from './pages/SubscriptionDashboard';
 
 const PrivateRoute = ({ element, roles }) => {
   if (!element || !roles) {
@@ -92,6 +93,10 @@ function App() {
           <Route
             path="/admin/chats"
             element={<PrivateRoute element={<AdminChat />} roles={['admin']} />}
+          />
+          <Route
+            path="/admin/subscriptions"
+            element={<PrivateRoute element={<SubscriptionDashboard />} roles={['admin']} />}
           />
         </Routes>
       </Router>
