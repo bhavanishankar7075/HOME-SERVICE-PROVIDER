@@ -1,4 +1,5 @@
-// authRoutes.js
+
+ // authRoutes.js
 const express = require('express');
 const router = express.Router();
 const { register, login, adminLogin, adminSignup,resetPassword } = require('../controllers/authController');
@@ -18,4 +19,4 @@ router.use((err, req, res, next) => {
   });
 });
 
-module.exports = router;
+module.exports = router; 

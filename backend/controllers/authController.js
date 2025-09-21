@@ -1,4 +1,5 @@
-const User = require('../models/User');
+
+ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const bcrypt = require('bcrypt');
@@ -309,7 +310,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { register, login, adminLogin, adminSignup, resetPassword };
+module.exports = { register, login, adminLogin, adminSignup, resetPassword }; 
 
 
 
