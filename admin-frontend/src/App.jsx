@@ -10,8 +10,7 @@ import CustomerFeedbacks from './pages/CustomerFeedbacks';
 import ProviderManagement from './pages/ProviderManagement';
 import { useSelector } from 'react-redux';
 import CustomerManagement from './pages/customerManagement';
-/* import AppointmentManagement from './pages/AppointmentManagement';
- */import ActivityLogs from './pages/ActivityLogs';
+import ActivityLogs from './pages/ActivityLogs';
 import AdminSettings from './pages/AdminSettings';
 import AdminMessages from './pages/AdminMessages';
 import BookingManagement from './pages/BookingMangement';
@@ -20,6 +19,7 @@ import FaqsContacts from './pages/FaqsContacts';
 import AdminChat from './pages/admin/AdminChat';
 import AdminResetPassword from './pages/AdminResetPassword';
 import SubscriptionDashboard from './pages/SubscriptionDashboard';
+import PlansPage from './pages/PlansPage';
 
 const PrivateRoute = ({ element, roles }) => {
   if (!element || !roles) {
@@ -97,6 +97,10 @@ function App() {
           <Route
             path="/admin/subscriptions"
             element={<PrivateRoute element={<SubscriptionDashboard />} roles={['admin']} />}
+          />
+           <Route
+            path="/admin/plans"
+            element={<PrivateRoute element={<PlansPage />} roles={['admin']} />}
           />
         </Routes>
       </Router>

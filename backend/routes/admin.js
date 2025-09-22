@@ -5,9 +5,7 @@ const {
     updateUserRole, 
     deleteUser, 
     updateUser, 
-    /* getAppointments, 
-    updateAppointment, 
-    deleteAppointment, */
+   
     getMessages,
     markMessageAsRead,
     deleteMessage,
@@ -19,8 +17,7 @@ const {
 const authMiddleware = require('../middleware/auth');
 const { param, body, query } = require('express-validator');
 const User = require('../models/User');
-/* const Appointment = require('../models/Appointment');
- */const { getLogs, deleteLog, deleteLogsBulk, } = require('../controllers/adminController');
+const { getLogs, deleteLog, deleteLogsBulk, } = require('../controllers/adminController');
 const { updateSettings } = require('../controllers/adminController');
 const mongoose = require('mongoose');
 
@@ -49,10 +46,7 @@ const validateProfile = body('profile').optional().custom((value) => {
   return true;
 });
 
-/* const validateAppointmentId = param('id').isMongoId().withMessage('Invalid appointment ID');
- *//* const validateStatus = body('status').optional().isIn(['pending', 'confirmed', 'completed', 'cancelled']).withMessage('Invalid status');
-const validateScheduledTime = body('scheduledTime').optional().isISO8601().withMessage('Invalid date format');
- */
+
 // New validation for settings
 const validateSettings = [
   body('name').optional().isString().withMessage('Name must be a string'),
@@ -82,20 +76,7 @@ router.delete('/users/:id', [
   validateUserId,
 ], deleteUser);
 
-/* router.get('/appointments', authMiddleware(['admin']), getAppointments);
- */
-/* router.put('/appointments/:id', [
-  authMiddleware(['admin']),
-  validateAppointmentId,
-  validateStatus,
-  validateScheduledTime,
-], updateAppointment);
 
-router.delete('/appointments/:id', [
-  authMiddleware(['admin']),
-  validateAppointmentId,
-], deleteAppointment);
- */
 // Add toggle routes for admin control
 router.put('/users/:userId/toggle-status', [
   authMiddleware(['admin']),
