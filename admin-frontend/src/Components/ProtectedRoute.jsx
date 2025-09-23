@@ -23,8 +23,8 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!token) {
-    console.log('ProtectedRoute: No token, redirecting to /admin/login', { from: location.pathname });
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    console.log('ProtectedRoute: No token, redirecting to /', { from: location.pathname });
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   console.log('ProtectedRoute: Access granted, rendering children');
