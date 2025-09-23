@@ -69,8 +69,8 @@ const StyledSubscriptionChip = styled(Chip)(({ theme, subscription }) => ({
 const ProviderManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+/*   const [appointments, setAppointments] = useState([]);
+ */  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ open: false, text: "", severity: "success" });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedUser, setEditedUser] = useState(null);
@@ -95,7 +95,7 @@ const ProviderManagement = () => {
     }
   }, [token]);
   
-  const fetchAppointments = useCallback(async () => {
+ /*  const fetchAppointments = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/admin/appointments`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -104,7 +104,7 @@ const ProviderManagement = () => {
     } catch (error) {
       console.error("Error fetching appointments:", error.response?.data || error.message);
     }
-  }, [token]);
+  }, [token]); */
 
   useEffect(() => {
     if (!token) {
@@ -112,7 +112,7 @@ const ProviderManagement = () => {
       return;
     }
     fetchUsers();
-    fetchAppointments();
+ /*    fetchAppointments(); */
 
     const handleUserUpdate = (data) => {
       if (data.role === 'provider') {
@@ -130,7 +130,7 @@ const ProviderManagement = () => {
         socket.off("userUpdated", handleUserUpdate);
         socket.off("userDeleted", handleUserDelete);
     };
-  }, [token, navigate, fetchUsers, fetchAppointments]);
+  }, [token, navigate, fetchUsers, ]);
 
   const handleEdit = (user) => {
     setEditedUser({
@@ -330,14 +330,14 @@ const ProviderManagement = () => {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    {/* <Grid item xs={12} sm={6} md={3}>
                         <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: 3 }}>
                             <Typography variant="h6" sx={{ color: "#2c5282", fontWeight: "medium" }}>Pending Appointments</Typography>
                             <Typography variant="h4" sx={{ color: "#1a3c34", fontWeight: "bold" }}>
                                 {appointments.filter((app) => app.status === "pending").length}
                             </Typography>
                         </Paper>
-                    </Grid>
+                    </Grid> */}
                 </Grid>
 
                 <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: "#ffffff" }}>
