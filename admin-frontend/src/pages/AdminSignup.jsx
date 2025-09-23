@@ -1,4 +1,330 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setLoading, setNeedsVerification, setError } from '../store/authSlice';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Stack,
+  InputAdornment,
+  CircularProgress,
+  Link,
+  Paper,
+  Container,
+} from '@mui/material';
+import { PersonOutline, EmailOutlined, PhoneOutlined, LockOutlined, Hub as HubIcon } from '@mui/icons-material';
+import axios from './axiosInstance';
+import adminSignupImage from '../assets/service-hub-logo.png';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const AdminSignup = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading, error, user } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    console.log('AdminSignup: Current auth state:', { isAuthenticated, isLoading, error, user });
+    console.log('AdminSignup: localStorage persist:root:', localStorage.getItem('persist:root'));
+    if (isAuthenticated && user?.role === 'admin') {
+      console.log('AdminSignup: User authenticated, navigating to dashboard');
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLocalError('');
+    if (!name || !email || !password) {
+      setLocalError('Please fill in all required fields');
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters long');
+      return;
+    }
+    dispatch(setLoading(true));
+    try {
+      console.log('AdminSignup: Sending signup request', { name, email, phone });
+      const response = await axios.post(`${API_URL}/api/auth/admin-signup`, { name, email, phone, password }, { withCredentials: true });
+      const { needsVerification } = response.data;
+      console.log('AdminSignup: Signup response:', response.data);
+      dispatch(setNeedsVerification(needsVerification));
+      navigate('/admin/verify-otp', { state: { email }, replace: true });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to sign up. Please try again.';
+      console.error('AdminSignup: Signup failed', err);
+      setLocalError(errorMsg);
+      dispatch(setError(errorMsg));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 64px)',
+        backgroundColor: (theme) => theme.palette.grey[100],
+        px: 2,
+      }}
+    >
+      <Container maxWidth="md" disableGutters>
+        <Paper
+          elevation={8}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { md: '6fr 6fr' },
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundImage: `url(${adminSignupImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(135deg, rgba(3, 169, 244, 0.7) 30%, rgba(88, 86, 214, 0.7) 90%)',
+                zIndex: 1,
+              },
+              color: 'white',
+              textAlign: 'center',
+              p: 4,
+            }}
+          >
+            <Box sx={{ position: 'relative', zIndex: 2 }}>
+              <HubIcon sx={{ fontSize: 80, mb: 2 }} />
+              <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                ServiceHub
+              </Typography>
+              <Typography variant="h6">Admin Control Panel</Typography>
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              p: { xs: 3, sm: 4, md: 5 },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1, color: 'primary.main' }}>
+                Create Admin Account
+              </Typography>
+              <Typography variant="body2" sx={{ textAlign: 'center', mb: 3, color: 'text.secondary' }}>
+                Enter your details to get started.
+              </Typography>
+              {(error || localError) && (
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch(setError(null))}>
+                  {error || localError}
+                </Alert>
+              )}
+              <Box component="form" onSubmit={handleSignup}>
+                <Stack spacing={2}>
+                  <TextField
+                    label="Name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    required
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonOutline color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    required
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailOutlined color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    label="Phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneOutlined color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                    required
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlined color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    disabled={isLoading}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 'bold',
+                      bgcolor: 'primary.main',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                    }}
+                  >
+                    {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign Up'}
+                  </Button>
+                </Stack>
+              </Box>
+              <Typography variant="body2" sx={{ mt: 3, textAlign: 'center', color: 'text.secondary' }}>
+                Already have an account?{' '}
+                <Link component={RouterLink} to="/admin/login" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  Login
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
+};
+
+export default AdminSignup;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//main
+/* import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
@@ -60,7 +386,6 @@ const AdminSignup = () => {
         px: 2, // Horizontal padding for small screens
       }}
     >
-      {/* Container for the actual signup card, limiting its max width */}
       <Container maxWidth="md" disableGutters>
         <Paper
           elevation={8}
@@ -71,7 +396,6 @@ const AdminSignup = () => {
             overflow: 'hidden',
           }}
         >
-          {/* Section 1: Visual Side (Left) - Image or branded content */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' }, // Hidden on small screens
@@ -99,7 +423,7 @@ const AdminSignup = () => {
               p: 4,
             }}
           >
-            <Box sx={{ position: 'relative', zIndex: 2 }}> {/* Content on top of overlay */}
+            <Box sx={{ position: 'relative', zIndex: 2 }}> 
               <HubIcon sx={{ fontSize: 80, mb: 2 }} />
               <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
                 ServiceHub
@@ -108,7 +432,6 @@ const AdminSignup = () => {
             </Box>
           </Box>
 
-          {/* Section 2: Form Side (Right) */}
           <Box
             sx={{
               p: { xs: 3, sm: 4, md: 5 }, // Responsive padding
@@ -132,7 +455,7 @@ const AdminSignup = () => {
               )}
 
               <Box component="form" onSubmit={handleSignup}>
-                <Stack spacing={2}> {/* Reduced spacing from 8 to 2 for better form density */}
+                <Stack spacing={2}> 
                   <TextField
                     label="Name"
                     type="text"
@@ -217,7 +540,7 @@ const AdminSignup = () => {
   );
 };
 
-export default AdminSignup;
+export default AdminSignup; */
 
 
 

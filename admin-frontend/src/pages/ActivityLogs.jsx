@@ -5,12 +5,14 @@ import {
 } from '@mui/material';
 import { Delete, ArrowBack, Refresh } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from "./axiosInstance";
+import { useSelector,  } from 'react-redux';
 import io from 'socket.io-client';
 
 const ActivityLogs = () => {
   const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
+      const { token, isAuthenticated, user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
   const [selectedLogs, setSelectedLogs] = useState([]);
@@ -18,7 +20,7 @@ const ActivityLogs = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
-  const token = localStorage.getItem('token');
+  
   const socket = io('http://localhost:5000', {
     withCredentials: true,
     extraHeaders: { Authorization: `Bearer ${token}` },
@@ -50,13 +52,27 @@ const ActivityLogs = () => {
     }
   };
 
-  useEffect(() => {
+ /*  useEffect(() => {
     if (!token) {
       setMessage({ open: true, text: 'No authentication token found. Please log in.', severity: 'error' });
       navigate('/');
       return;
     }
-    fetchLogs();
+    fetchLogs(); */
+
+
+
+
+  useEffect(() => {
+        console.log('ActivityLogs: Mounting, auth state:', { token, isAuthenticated, user });
+        if (!token || !isAuthenticated || user?.role !== 'admin') {
+          console.log('ActivityLogs: Invalid auth state, redirecting to /admin/login');
+          navigate('/admin/login', { replace: true });
+          return;
+        }
+        fetchLogs();
+
+
 
     socket.on('connect_error', (err) => {
       console.error('Socket.IO connection error:', err.message);

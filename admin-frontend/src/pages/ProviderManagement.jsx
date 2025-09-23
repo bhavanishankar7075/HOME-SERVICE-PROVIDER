@@ -48,7 +48,9 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../store/authSlice';
+import axios from "./axiosInstance";
 import io from "socket.io-client";
 import "../styles/ProviderManagement.css";
 
@@ -68,9 +70,10 @@ const StyledSubscriptionChip = styled(Chip)(({ theme, subscription }) => ({
 
 const ProviderManagement = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { token, isAuthenticated, user } = useSelector((state) => state.auth);
   const [users, setUsers] = useState([]);
-/*   const [appointments, setAppointments] = useState([]);
- */  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ open: false, text: "", severity: "success" });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedUser, setEditedUser] = useState(null);
@@ -79,47 +82,50 @@ const ProviderManagement = () => {
   const [skillFilter, setSkillFilter] = useState("");
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
-  const token = localStorage.getItem("token");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/admin/users`, {
+      console.log('ProviderManagement: Fetching providers with token:', token);
+      const response = await axios.get(`${API_URL}/api/admin/users?role=provider`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(response.data.filter((user) => user.role === "provider"));
+      console.log('ProviderManagement: Providers response:', response.data);
+      // Filter providers client-side to ensure only providers are displayed
+      const providers = Array.isArray(response.data) ? response.data.filter(user => user.role === 'provider') : [];
+      console.log('ProviderManagement: Filtered providers:', providers);
+      setUsers(providers);
     } catch (error) {
-      setMessage({ open: true, text: "Failed to load providers.", severity: "error" });
+      console.error('ProviderManagement: Error fetching providers:', error.response?.data || error.message);
+      setMessage({ open: true, text: error.response?.data?.message || "Failed to load providers.", severity: "error" });
+      if (error.response?.status === 401) {
+        console.log('ProviderManagement: 401 Unauthorized, logging out and redirecting to /admin/login');
+        dispatch(logout());
+        localStorage.removeItem('token');
+        navigate('/admin/login', { replace: true });
+      }
     } finally {
       setLoading(false);
     }
-  }, [token]);
-  
- /*  const fetchAppointments = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/admin/appointments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setAppointments(response.data);
-    } catch (error) {
-      console.error("Error fetching appointments:", error.response?.data || error.message);
-    }
-  }, [token]); */
+  }, [token, navigate, dispatch]);
 
   useEffect(() => {
-    if (!token) {
-      navigate("/");
+    console.log('ProviderManagement: Mounting, auth state:', { token, isAuthenticated, user });
+    if (!token || !isAuthenticated || user?.role !== 'admin') {
+      console.log('ProviderManagement: Invalid auth state, redirecting to /admin/login');
+      navigate('/admin/login', { replace: true });
       return;
     }
     fetchUsers();
- /*    fetchAppointments(); */
 
     const handleUserUpdate = (data) => {
       if (data.role === 'provider') {
+        console.log('ProviderManagement: Socket userUpdated:', data);
         setUsers((prev) => prev.map((u) => (u._id === data._id ? data : u)));
       }
     };
     const handleUserDelete = (data) => {
+      console.log('ProviderManagement: Socket userDeleted:', data);
       setUsers((prev) => prev.filter((u) => u._id !== data._id));
     };
 
@@ -127,18 +133,18 @@ const ProviderManagement = () => {
     socket.on("userDeleted", handleUserDelete);
 
     return () => {
-        socket.off("userUpdated", handleUserUpdate);
-        socket.off("userDeleted", handleUserDelete);
+      socket.off("userUpdated", handleUserUpdate);
+      socket.off("userDeleted", handleUserDelete);
     };
-  }, [token, navigate, fetchUsers, ]);
+  }, [token, isAuthenticated, user, navigate, fetchUsers]);
 
   const handleEdit = (user) => {
     setEditedUser({
-        ...user,
-        profile: {
-          ...user.profile,
-          skills: Array.isArray(user.profile.skills) ? user.profile.skills.join(', ') : '',
-        }
+      ...user,
+      profile: {
+        ...user.profile,
+        skills: Array.isArray(user.profile.skills) ? user.profile.skills.join(', ') : '',
+      }
     });
     setEditDialogOpen(true);
   };
@@ -154,20 +160,22 @@ const ProviderManagement = () => {
         : editedUser.profile.skills;
       
       const payload = {
-          ...editedUser,
-          profile: { ...editedUser.profile, skills: skillsArray },
-          role: 'provider'
+        ...editedUser,
+        profile: { ...editedUser.profile, skills: skillsArray },
+        role: 'provider'
       };
 
       if (isNewUser && !editedUser.password) {
         throw new Error("Password is required for new providers.");
       }
 
+      console.log('ProviderManagement: Saving provider:', payload);
       await axios[method](url, payload, { headers: { Authorization: `Bearer ${token}` } });
       setMessage({ open: true, text: `Provider ${isNewUser ? 'added' : 'updated'} successfully!`, severity: "success" });
       setEditDialogOpen(false);
       fetchUsers();
     } catch (error) {
+      console.error('ProviderManagement: Error saving provider:', error.response?.data || error.message);
       setMessage({ open: true, text: `Failed to save provider: ${error.response?.data?.message || error.message}`, severity: "error" });
     } finally {
       setLoading(false);
@@ -178,12 +186,14 @@ const ProviderManagement = () => {
     if (window.confirm("Are you sure you want to delete this provider?")) {
       setLoading(true);
       try {
+        console.log('ProviderManagement: Deleting provider:', id);
         await axios.delete(`${API_URL}/api/admin/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMessage({ open: true, text: "Provider deleted successfully!", severity: "success" });
         fetchUsers();
       } catch (error) {
+        console.error('ProviderManagement: Error deleting provider:', error.response?.data || error.message);
         setMessage({ open: true, text: "Failed to delete provider.", severity: "error" });
       } finally {
         setLoading(false);
@@ -217,9 +227,11 @@ const ProviderManagement = () => {
   const toggleUserStatus = async (userId) => {
     setLoading(true);
     try {
+      console.log('ProviderManagement: Toggling status for user:', userId);
       await axios.put(`${API_URL}/api/admin/users/${userId}/toggle-status`, {}, { headers: { Authorization: `Bearer ${token}` } });
       fetchUsers();
     } catch (error) {
+      console.error('ProviderManagement: Error toggling user status:', error.response?.data || error.message);
       setMessage({ open: true, text: "Failed to update provider status.", severity: "error" });
     } finally {
       setLoading(false);
@@ -229,9 +241,11 @@ const ProviderManagement = () => {
   const toggleAvailability = async (userId) => {
     setLoading(true);
     try {
+      console.log('ProviderManagement: Toggling availability for user:', userId);
       await axios.put(`${API_URL}/api/admin/users/${userId}/toggle-availability`, {}, { headers: { Authorization: `Bearer ${token}` } });
       fetchUsers();
     } catch (error) {
+      console.error('ProviderManagement: Error toggling availability:', error.response?.data || error.message);
       setMessage({ open: true, text: "Failed to update provider availability.", severity: "error" });
     } finally {
       setLoading(false);
@@ -248,19 +262,19 @@ const ProviderManagement = () => {
     return order === 'desc'
       ? (a, b) => {
           const aValue = orderBy === 'location' ? (a.profile?.location?.fullAddress || 'N/A') 
-                       : orderBy === 'subscriptionTier' ? (a.subscriptionTier || 'free') 
+                       : orderBy === 'subscriptionTier' ? (a.subscription?.subscriptionTier || 'free') 
                        : a[orderBy];
           const bValue = orderBy === 'location' ? (b.profile?.location?.fullAddress || 'N/A') 
-                       : orderBy === 'subscriptionTier' ? (b.subscriptionTier || 'free') 
+                       : orderBy === 'subscriptionTier' ? (b.subscription?.subscriptionTier || 'free') 
                        : b[orderBy];
           return bValue < aValue ? -1 : 1;
         }
       : (a, b) => {
           const aValue = orderBy === 'location' ? (a.profile?.location?.fullAddress || 'N/A') 
-                       : orderBy === 'subscriptionTier' ? (a.subscriptionTier || 'free') 
+                       : orderBy === 'subscriptionTier' ? (a.subscription?.subscriptionTier || 'free') 
                        : a[orderBy];
           const bValue = orderBy === 'location' ? (b.profile?.location?.fullAddress || 'N/A') 
-                       : orderBy === 'subscriptionTier' ? (b.subscriptionTier || 'free') 
+                       : orderBy === 'subscriptionTier' ? (b.subscription?.subscriptionTier || 'free') 
                        : b[orderBy];
           return aValue < bValue ? -1 : 1;
         };
@@ -275,16 +289,20 @@ const ProviderManagement = () => {
         (skillFilter ? user.profile.skills.some(skill => skill.toLowerCase().includes(skillFilter.toLowerCase())) : true)
     );
   
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleSidebar = () => {
+    console.log('ProviderManagement: Toggling sidebar, current state:', sidebarOpen);
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const exportProviders = () => {
+    console.log('ProviderManagement: Exporting providers');
     const csv = [
       "Name,Email,Phone,Location,Availability,Skills,Image,Status,SubscriptionTier",
       ...users.map(user =>
-        `${user.name},${user.email},${user.phone || "N/A"},"${user.profile?.location?.fullAddress || "N/A"}",${user.profile?.availability || "N/A"},"${(user.profile?.skills || []).join(", ")}",${user.profile?.image || "N/A"},${user.profile?.status || "N/A"},${user.subscriptionTier || "free"}`
-      ).join("\n"),
+        `"${user.name || 'N/A'}","${user.email || 'N/A'}","${user.phone || 'N/A'}","${user.profile?.location?.fullAddress || 'N/A'}","${user.profile?.availability || 'N/A'}","${(user.profile?.skills || []).join(', ')}","${user.profile?.image || 'N/A'}","${user.profile?.status || 'N/A'}","${user.subscription?.subscriptionTier || 'free'}"`
+      ),
     ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -294,191 +312,184 @@ const ProviderManagement = () => {
 
   return (
     <Box sx={{ p: 4, maxWidth: "1600px", mx: "auto", bgcolor: "#f4f6f8", minHeight: "100vh" }}>
-        <Typography variant="h3" sx={{ mb: 2, fontWeight: "bold", color: "#1a3c34", textAlign: "center" }}>
-            Provider Management
-        </Typography>
+      <Typography variant="h3" sx={{ mb: 2, fontWeight: "bold", color: "#1a3c34", textAlign: "center" }}>
+        Provider Management
+      </Typography>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4, flexWrap: 'wrap', gap: 2 }}>
-            <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin/dashboard")}>
-              Back to Dashboard
-            </Button>
-            <Box>
-                <Button variant="contained" sx={{mr: 2}} startIcon={<Add />} onClick={handleAddProvider}>
-                    Add Provider
-                </Button>
-                <Button variant="outlined" onClick={exportProviders}>
-                    Export Providers
-                </Button>
-            </Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4, flexWrap: 'wrap', gap: 2 }}>
+        <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin/dashboard")}>
+          Back to Dashboard
+        </Button>
+        <Box>
+          <Button variant="contained" sx={{ mr: 2 }} startIcon={<Add />} onClick={handleAddProvider}>
+            Add Provider
+          </Button>
+          <Button variant="outlined" onClick={exportProviders}>
+            Export Providers
+          </Button>
         </Box>
-        
-        <Paper sx={{p: 2, mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-            <TextField label="Search by Name or Email" variant="outlined" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} sx={{flexGrow: 1, minWidth: '250px'}}/>
-            <TextField label="Filter by Skill" variant="outlined" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} sx={{flexGrow: 1, minWidth: '200px'}}/>
-        </Paper>
-
-        {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}><CircularProgress /></Box>
-        ) : (
-            <>
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: 3 }}>
-                            <Typography variant="h6" sx={{ color: "#2c5282", fontWeight: "medium" }}>Active Providers</Typography>
-                            <Typography variant="h4" sx={{ color: "#1a3c34", fontWeight: "bold" }}>
-                                {users.filter((user) => user.profile?.status === "active").length}
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    {/* <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: 3 }}>
-                            <Typography variant="h6" sx={{ color: "#2c5282", fontWeight: "medium" }}>Pending Appointments</Typography>
-                            <Typography variant="h4" sx={{ color: "#1a3c34", fontWeight: "bold" }}>
-                                {appointments.filter((app) => app.status === "pending").length}
-                            </Typography>
-                        </Paper>
-                    </Grid> */}
-                </Grid>
-
-                <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: "#ffffff" }}>
-                    <TableContainer sx={{ overflowX: 'auto' }}>
-                        <Table aria-label="provider table">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell><TableSortLabel active={orderBy === 'name'} direction={orderBy === 'name' ? order : 'asc'} onClick={() => handleSort('name')}>Provider</TableSortLabel></TableCell>
-                                    <TableCell>Contact</TableCell>
-                                    <TableCell><TableSortLabel active={orderBy === 'location'} direction={orderBy === 'location' ? order : 'asc'} onClick={() => handleSort('location')}>Location</TableSortLabel></TableCell>
-                                    <TableCell>Skills</TableCell>
-                                    <TableCell>Availability</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell><TableSortLabel active={orderBy === 'subscriptionTier'} direction={orderBy === 'subscriptionTier' ? order : 'asc'} onClick={() => handleSort('subscriptionTier')}>Subscription Plan</TableSortLabel></TableCell>
-                                    <TableCell align="right">Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredAndSortedProviders.map((user) => (
-                                    <TableRow key={user._id} hover>
-                                        <TableCell component="th" scope="row">
-                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Avatar src={user.profile?.image ? `${API_URL}${user.profile.image}` : ''} sx={{ mr: 2 }}>{user.name.charAt(0)}</Avatar>
-                                                <Typography variant="body1" fontWeight="medium">{user.name}</Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2">{user.email}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{user.phone}</Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2">{user.profile?.location?.fullAddress || "N/A"}</Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', maxWidth: '250px' }}>
-                                                {(user.profile?.skills || []).map(skill => <Chip key={skill} label={skill} size="small" />)}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Switch checked={user.profile?.availability === "Available"} onChange={() => toggleAvailability(user._id)} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Switch checked={user.profile?.status === "active"} onChange={() => toggleUserStatus(user._id)} color="success" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <StyledSubscriptionChip
-                                                label={`${user.subscriptionTier ? user.subscriptionTier.charAt(0).toUpperCase() + user.subscriptionTier.slice(1) : 'Free'} Plan`}
-                                                subscription={user.subscriptionTier || 'free'}
-                                            />
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            <IconButton color="primary" onClick={() => handleEdit(user)}><Edit /></IconButton>
-                                            <IconButton color="error" onClick={() => handleDelete(user._id)}><Delete /></IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Paper>
-            </>
-        )}
-
-        <Dialog open={editDialogOpen} onClose={handleDialogClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{editedUser?._id ? "Edit Provider" : "Add New Provider"}</DialogTitle>
-            <DialogContent>
-                <TextField 
-                    margin="dense" 
-                    label="Name" 
-                    fullWidth 
-                    value={editedUser?.name || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
-                />
-                <TextField 
-                    margin="dense" 
-                    label="Email" 
-                    fullWidth 
-                    value={editedUser?.email || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
-                />
-                {!editedUser?._id && (
-                    <TextField 
-                        margin="dense" 
-                        label="Password" 
-                        type="password" 
-                        helperText="Required for new providers" 
-                        fullWidth 
-                        onChange={(e) => setEditedUser({ ...editedUser, password: e.target.value })} 
-                    />
-                )}
-                <TextField 
-                    margin="dense" 
-                    label="Phone" 
-                    fullWidth 
-                    value={editedUser?.phone || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })} 
-                />
-                <TextField 
-                    margin="dense" 
-                    label="Skills (comma-separated)" 
-                    fullWidth 
-                    value={editedUser?.profile?.skills || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, skills: e.target.value }})}
-                />
-                <TextField 
-                    margin="dense" 
-                    label="Availability (e.g., YYYY-MM-DD HH:mm-HH:mm)" 
-                    fullWidth 
-                    value={editedUser?.profile?.availability || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, availability: e.target.value }})}
-                />
-                <TextField 
-                    margin="dense" 
-                    label="Location" 
-                    fullWidth 
-                    value={editedUser?.profile?.location?.fullAddress || ""} 
-                    onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, location: { ...editedUser.profile.location, fullAddress: e.target.value }}})}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleDialogClose}>Cancel</Button>
-                <Button onClick={handleSave} variant="contained" disabled={loading}>
-                    {loading ? <CircularProgress size={24}/> : 'Save'}
-                </Button>
-            </DialogActions>
-        </Dialog>
+      </Box>
       
-        <Snackbar 
-            open={message.open} 
-            autoHideDuration={4000} 
-            onClose={() => setMessage({ ...message, open: false })} 
-            anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      <Paper sx={{ p: 2, mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <TextField label="Search by Name or Email" variant="outlined" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} sx={{ flexGrow: 1, minWidth: '250px' }}/>
+        <TextField label="Filter by Skill" variant="outlined" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} sx={{ flexGrow: 1, minWidth: '200px' }}/>
+      </Paper>
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}><CircularProgress /></Box>
+      ) : (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: 3 }}>
+                <Typography variant="h6" sx={{ color: "#2c5282", fontWeight: "medium" }}>Active Providers</Typography>
+                <Typography variant="h4" sx={{ color: "#1a3c34", fontWeight: "bold" }}>
+                  {users.filter((user) => user.profile?.status === "active").length}
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: "#ffffff" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+              <Table aria-label="provider table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><TableSortLabel active={orderBy === 'name'} direction={orderBy === 'name' ? order : 'asc'} onClick={() => handleSort('name')}>Provider</TableSortLabel></TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell><TableSortLabel active={orderBy === 'location'} direction={orderBy === 'location' ? order : 'asc'} onClick={() => handleSort('location')}>Location</TableSortLabel></TableCell>
+                    <TableCell>Skills</TableCell>
+                    <TableCell>Availability</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell><TableSortLabel active={orderBy === 'subscriptionTier'} direction={orderBy === 'subscriptionTier' ? order : 'asc'} onClick={() => handleSort('subscriptionTier')}>Subscription Plan</TableSortLabel></TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredAndSortedProviders.map((user) => (
+                    <TableRow key={user._id} hover>
+                      <TableCell component="th" scope="row">
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar src={user.profile?.image ? `${API_URL}${user.profile.image}` : ''} sx={{ mr: 2 }}>{user.name.charAt(0)}</Avatar>
+                          <Typography variant="body1" fontWeight="medium">{user.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{user.email}</Typography>
+                        <Typography variant="body2" color="text.secondary">{user.phone}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{user.profile?.location?.fullAddress || "N/A"}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', maxWidth: '250px' }}>
+                          {(user.profile?.skills || []).map(skill => <Chip key={skill} label={skill} size="small" />)}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Switch checked={user.profile?.availability === "Available"} onChange={() => toggleAvailability(user._id)} />
+                      </TableCell>
+                      <TableCell>
+                        <Switch checked={user.profile?.status === "active"} onChange={() => toggleUserStatus(user._id)} color="success" />
+                      </TableCell>
+                      <TableCell>
+                        <StyledSubscriptionChip
+                          label={`${user.subscription?.subscriptionTier ? user.subscription.subscriptionTier.charAt(0).toUpperCase() + user.subscription.subscriptionTier.slice(1) : 'Free'} Plan`}
+                          subscription={user.subscription?.subscriptionTier || 'free'}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton color="primary" onClick={() => handleEdit(user)}><Edit /></IconButton>
+                        <IconButton color="error" onClick={() => handleDelete(user._id)}><Delete /></IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </>
+      )}
+
+      <Dialog open={editDialogOpen} onClose={handleDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>{editedUser?._id ? "Edit Provider" : "Add New Provider"}</DialogTitle>
+        <DialogContent>
+          <TextField 
+            margin="dense" 
+            label="Name" 
+            fullWidth 
+            value={editedUser?.name || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
+          />
+          <TextField 
+            margin="dense" 
+            label="Email" 
+            fullWidth 
+            value={editedUser?.email || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
+          />
+          {!editedUser?._id && (
+            <TextField 
+              margin="dense" 
+              label="Password" 
+              type="password" 
+              helperText="Required for new providers" 
+              fullWidth 
+              value={editedUser?.password || ""} 
+              onChange={(e) => setEditedUser({ ...editedUser, password: e.target.value })} 
+            />
+          )}
+          <TextField 
+            margin="dense" 
+            label="Phone" 
+            fullWidth 
+            value={editedUser?.phone || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })} 
+          />
+          <TextField 
+            margin="dense" 
+            label="Skills (comma-separated)" 
+            fullWidth 
+            value={editedUser?.profile?.skills || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, skills: e.target.value }})}
+          />
+          <TextField 
+            margin="dense" 
+            label="Availability (e.g., YYYY-MM-DD HH:mm-HH:mm)" 
+            fullWidth 
+            value={editedUser?.profile?.availability || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, availability: e.target.value }})}
+          />
+          <TextField 
+            margin="dense" 
+            label="Location" 
+            fullWidth 
+            value={editedUser?.profile?.location?.fullAddress || ""} 
+            onChange={(e) => setEditedUser({ ...editedUser, profile: { ...editedUser.profile, location: { ...editedUser.profile.location, fullAddress: e.target.value }}})}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={24}/> : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      <Snackbar 
+        open={message.open} 
+        autoHideDuration={4000} 
+        onClose={() => setMessage({ ...message, open: false })} 
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert 
+          onClose={() => setMessage({ ...message, open: false })} 
+          severity={message.severity} 
+          sx={{ width: "100%" }}
         >
-            <Alert 
-                onClose={() => setMessage({ ...message, open: false })} 
-                severity={message.severity} 
-                sx={{ width: "100%" }}
-            >
-                {message.text}
-            </Alert>
-        </Snackbar>
+          {message.text}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

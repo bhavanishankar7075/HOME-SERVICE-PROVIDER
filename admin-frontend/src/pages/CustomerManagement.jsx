@@ -44,7 +44,10 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+/* import axios from "axios";
+
+ */import axios from "./axiosInstance";
+import { useSelector,  } from 'react-redux';
 import io from "socket.io-client";
 import "../styles/CustomerManagement.css";
 
@@ -54,6 +57,7 @@ const socket = io(API_URL);
 const CustomerManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+    const { token, isAuthenticated, user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ open: false, text: "", severity: "success" });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -66,7 +70,7 @@ const CustomerManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("name");
-  const token = localStorage.getItem("token");
+/*   const token = localStorage.getItem("token"); */
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -104,12 +108,21 @@ const CustomerManagement = () => {
     }
   }, [token]);
 
-  useEffect(() => {
+/*   useEffect(() => {
     if (!token) {
       navigate("/");
       return;
     }
-    fetchData();
+    fetchData(); */
+
+      useEffect(() => {
+        console.log('CustomerManagement: Mounting, auth state:', { token, isAuthenticated, user });
+        if (!token || !isAuthenticated || user?.role !== 'admin') {
+          console.log('CustomerManagement: Invalid auth state, redirecting to /admin/login');
+          navigate('/admin/login', { replace: true });
+          return;
+        }
+        fetchData();
 
     const handleUserUpdate = (data) => {
       if (data.role === "customer") {

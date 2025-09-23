@@ -1,0 +1,257 @@
+import { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
+import axios from 'axios';
+import { setUser, setLoading, setNeedsVerification } from '../redux/authSlice';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+  Link,
+  Grid,
+  Paper,
+  InputAdornment,
+  Container,
+} from '@mui/material';
+import { EmailOutlined, LockOutlined } from '@mui/icons-material';
+import loginImg from '../assets/login-image.png';
+
+function VerifyOTP() {
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(60);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const { email } = state || {};
+  const { user, token, isAuthenticated, isLoading } = useSelector((state) => state.auth);
+  const stateRef = useRef(useSelector((state) => state.auth)); // Store current state for use in async function
+
+  useEffect(() => {
+    console.log('VerifyOTP: Current auth state:', { user, token, isAuthenticated, isLoading });
+    console.log('VerifyOTP: localStorage persist:root:', localStorage.getItem('persist:root'));
+    if (isAuthenticated && user && token) {
+      console.log('VerifyOTP: User authenticated, navigating...', { user, token });
+      const role = user.role || 'customer';
+      navigate(role === 'provider' ? '/providerhome' : '/home', { replace: true });
+    }
+    if (!email) {
+      console.log('VerifyOTP: No email in state, redirecting to login');
+      navigate('/login', { replace: true });
+    }
+  }, [user, token, isAuthenticated, email, navigate]);
+
+  useEffect(() => {
+    let timer;
+    if (resendDisabled && resendCountdown > 0) {
+      timer = setInterval(() => {
+        setResendCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (resendCountdown === 0) {
+      setResendDisabled(false);
+    }
+    return () => clearInterval(timer);
+  }, [resendDisabled, resendCountdown]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!otp) {
+      setError('Please enter the OTP');
+      return;
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      setError('OTP must be a 6-digit number');
+      return;
+    }
+    dispatch(setLoading(true));
+    try {
+      console.log('VerifyOTP: Sending OTP verification request', { email, otp });
+      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', { email, otp });
+      const { token: responseToken, user: userData } = response.data;
+      console.log('VerifyOTP: OTP verification response:', response.data);
+
+      if (!userData || !responseToken) {
+        throw new Error('Invalid response format: user or token missing');
+      }
+
+      dispatch(setUser({ user: userData, token: responseToken }));
+      dispatch(setNeedsVerification(false));
+      console.log('VerifyOTP: After setUser, auth state:', stateRef.current);
+      console.log('VerifyOTP: After setUser, localStorage persist:root:', localStorage.getItem('persist:root'));
+      const role = userData.role || 'customer';
+      navigate(role === 'provider' ? '/providerhome' : '/home', { replace: true });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'OTP verification failed. Please try again.';
+      console.error('VerifyOTP: OTP verification failed', err);
+      setError(errorMsg);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError('');
+    if (!email) {
+      setError('Email not provided. Please return to login.');
+      return;
+    }
+    dispatch(setLoading(true));
+    try {
+      await axios.post('http://localhost:5000/api/auth/resend-otp', { email });
+      setResendDisabled(true);
+      setResendCountdown(60);
+      alert('A new OTP has been sent to your email.');
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
+      setError(errorMsg);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ ml: 2 }}>Verifying OTP...</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 64px)',
+        backgroundColor: (theme) => theme.palette.grey[100],
+        px: 2,
+      }}
+    >
+      <Container maxWidth="lg" disableGutters>
+        <Paper
+          elevation={8}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { md: '3fr 5fr' },
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'block' },
+              backgroundImage: `url(${loginImg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <Box
+            sx={{
+              p: { xs: 3, sm: 4, md: 6 },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
+              <Typography component="h1" variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', textAlign: 'center' }}>
+                ServiceHub
+              </Typography>
+              <Typography variant="h6" color="text.secondary" sx={{ mt: 1, mb: 4, textAlign: 'center' }}>
+                Enter the OTP sent to your email
+              </Typography>
+
+              {error && (
+                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  value={email || ''}
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="otp"
+                  label="OTP (6 digits)"
+                  name="otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={isLoading}
+                  sx={{
+                    mt: 3,
+                    mb: 2,
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    bgcolor: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                  }}
+                >
+                  {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Verify OTP'}
+                </Button>
+                <Grid container justifyContent="space-between">
+                  <Grid item>
+                    <Button
+                      onClick={handleResendOtp}
+                      disabled={resendDisabled || isLoading}
+                      variant="text"
+                      sx={{ textTransform: 'none', color: 'primary.main' }}
+                    >
+                      Resend OTP {resendDisabled ? `(${resendCountdown}s)` : ''}
+                    </Button>
+                  </Grid>
+                  <Grid item>
+                    <Link component={RouterLink} to="/login" variant="body2" sx={{ color: 'primary.main' }}>
+                      Back to Login
+                    </Link>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
+}
+
+export default VerifyOTP;

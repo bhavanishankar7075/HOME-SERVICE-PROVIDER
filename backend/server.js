@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const http = require('http');
+const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -57,6 +58,7 @@ app.post('/api/payments/stripe-webhook', express.raw({ type: 'application/json' 
 
 // This middleware parses JSON for all OTHER routes
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
