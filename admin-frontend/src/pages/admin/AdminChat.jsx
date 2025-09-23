@@ -170,7 +170,7 @@ const ConversationList = React.memo(({ conversations, selectedConvo, handleSelec
                             secondaryTypographyProps={{ noWrap: true }}
                         />
                         <Stack alignItems="flex-end">
-                             <Chip
+                            <Chip
                                 label={convo.status.replace('_', ' ')}
                                 size="small"
                                 {...getStatusChipProps(convo.status)}
@@ -179,7 +179,7 @@ const ConversationList = React.memo(({ conversations, selectedConvo, handleSelec
                         </Stack>
                     </ListItemButton>
                 )) : (
-                     <Typography sx={{ textAlign: 'center', p: 3, color: 'text.secondary' }}>No conversations found.</Typography>
+                    <Typography sx={{ textAlign: 'center', p: 3, color: 'text.secondary' }}>No conversations found.</Typography>
                 )}
             </List>
         </Stack>
@@ -317,7 +317,7 @@ const ChatWindow = ({
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '20px' } }}
                         />
                         <Tooltip title="Send Message">
-                             <span>
+                            <span>
                                 <IconButton type="submit" color="primary" disabled={!newMessage.trim()} sx={{bgcolor: 'primary.main', color: 'white', '&:hover': {bgcolor: 'primary.dark'}}}>
                                     <SendIcon />
                                 </IconButton>
@@ -359,14 +359,26 @@ const AdminChat = () => {
             setLoading(false);
         }
     }, [token]);
-    
+
     const handleSelectConversation = useCallback(async (conversation) => {
         if (!conversation.userId || selectedConvo?._id === conversation._id) return;
         setSelectedConvo(conversation);
         setMessagesLoading(true);
         setError(null);
         setDrawerOpen(false);
+
         try {
+            // If the conversation has 'needs_attention' status, update it to 'open'
+            if (conversation.status === 'needs_attention') {
+                await axios.post(`${API_URL}/api/chat/admin/reopen`, { conversationId: conversation._id }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setConversations(prev =>
+                    prev.map(c => c._id === conversation._id ? { ...c, status: 'open' } : c)
+                );
+                setSelectedConvo({ ...conversation, status: 'open' });
+            }
+
             const { data } = await axios.get(`${API_URL}/api/chat/admin/conversations/${conversation._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -378,7 +390,7 @@ const AdminChat = () => {
             setMessagesLoading(false);
         }
     }, [selectedConvo, token]);
-    
+
     const handleStatusChange = useCallback(async (endpoint, status) => {
         if (!selectedConvo) return;
         try {
@@ -446,25 +458,25 @@ const AdminChat = () => {
         if (!newMessage.trim() || !selectedConvo || selectedConvo.status === 'closed') return;
         
         const optimisticMessage = {
-             _id: `optimistic-${Date.now()}`,
-             sender: 'model',
-             text: `Admin: ${newMessage}`,
-             isOptimistic: true,
-             createdAt: new Date().toISOString()
-         };
-         setMessages(prev => [...prev, optimisticMessage]);
-         setNewMessage('');
-         setError(null);
+            _id: `optimistic-${Date.now()}`,
+            sender: 'model',
+            text: `Admin: ${newMessage}`,
+            isOptimistic: true,
+            createdAt: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, optimisticMessage]);
+        setNewMessage('');
+        setError(null);
 
         try {
-             await axios.post(`${API_URL}/api/chat/admin/send`, 
-                 { conversationId: selectedConvo._id, text: newMessage },
-                 { headers: { Authorization: `Bearer ${token}` } }
-             );
-         } catch (error) {
-             setError('Failed to send message.');
-             setMessages(prev => prev.filter(msg => !msg.isOptimistic));
-         }
+            await axios.post(`${API_URL}/api/chat/admin/send`, 
+                { conversationId: selectedConvo._id, text: newMessage },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (error) {
+            setError('Failed to send message.');
+            setMessages(prev => prev.filter(msg => !msg.isOptimistic));
+        }
     }, [newMessage, selectedConvo, token]);
     
     const handleTyping = (e) => setNewMessage(e.target.value);
@@ -500,12 +512,12 @@ const AdminChat = () => {
         };
         
         const handleUserTyping = ({ conversationId }) => {
-             if (selectedConvo?._id === conversationId) {
-                 setIsTyping(true);
-                 const timer = setTimeout(() => setIsTyping(false), 3000);
-                 return () => clearTimeout(timer);
-             }
-         };
+            if (selectedConvo?._id === conversationId) {
+                setIsTyping(true);
+                const timer = setTimeout(() => setIsTyping(false), 3000);
+                return () => clearTimeout(timer);
+            }
+        };
 
         socket.on('chatNeedsAttention', updateConversationInList);
         socket.on('adminMessageSent', handleNewMessage);
