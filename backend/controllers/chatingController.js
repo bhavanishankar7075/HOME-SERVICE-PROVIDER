@@ -328,6 +328,42 @@ const deleteConversation = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Conversation deleted successfully.' });
 });
 
+
+
+
+
+const clearChatHistory = asyncHandler(async (req, res) => {
+    const { conversationId } = req.params;
+
+    if (!mongoose.isValidObjectId(conversationId)) {
+        res.status(400);
+        throw new Error('Invalid Conversation ID.');
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+        res.status(404);
+        throw new Error('Conversation not found.');
+    }
+
+    // Delete all Chating documents associated with this conversation
+    await Chating.deleteMany({ conversationId });
+
+    // Emit a socket event to inform clients in real-time
+    if (global.io) {
+        global.io.to(conversation.userId.toString()).emit('chatCleared', { conversationId });
+        global.io.to('admin_room').emit('chatCleared', { conversationId });
+    }
+
+    res.status(200).json({ message: 'Chat history cleared successfully.' });
+});
+
+
+
+
+
+
+
 module.exports = {
     getOrCreateConversation,
     postMessage,
@@ -336,7 +372,8 @@ module.exports = {
     adminSendMessage,
     closeConversation,
     reopenConversation,
-    deleteConversation
+    deleteConversation,
+     clearChatHistory
 };
 
 

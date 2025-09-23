@@ -9,7 +9,8 @@ const {
     adminSendMessage,
     closeConversation,
     reopenConversation,
-    deleteConversation
+    deleteConversation,
+    clearChatHistory
 } = require('../controllers/chatingController');
 
 router.get('/', authMiddleware(), getOrCreateConversation);
@@ -21,6 +22,8 @@ router.post('/admin/send', authMiddleware(['admin']), adminSendMessage);
 router.post('/admin/close', authMiddleware(['admin']), closeConversation);
 router.post('/admin/reopen', authMiddleware(['admin']), reopenConversation);
 router.post('/admin/delete', authMiddleware(['admin']), deleteConversation);
+// Add this line with your other admin routes
+router.delete('/admin/clear/:conversationId', authMiddleware(['admin']), clearChatHistory);
 
 module.exports = router;
 
