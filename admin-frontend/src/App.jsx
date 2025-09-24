@@ -25,7 +25,7 @@ import AdminResetPassword from './pages/AdminResetPassword';
 import SubscriptionDashboard from './pages/SubscriptionDashboard';
 import PlansPage from './pages/PlansPage';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import PageTransition from './components/PageTransition';
+import PageTransition from './Components/PageTransition'
 
 const AnimatedRoutes = () => {
   const location = useLocation();
