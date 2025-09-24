@@ -46,7 +46,7 @@ const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:5000'],
+  origin: ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:5000','https://home-service-provider-ejso.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
