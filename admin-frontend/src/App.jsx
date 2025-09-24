@@ -4,7 +4,7 @@ import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { AnimatePresence } from 'framer-motion';
 import { store, persistor } from './store';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './Components/ProtectedRoute'
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLogin from './pages/AdminLogin';
 import AdminSignup from './pages/AdminSignup';

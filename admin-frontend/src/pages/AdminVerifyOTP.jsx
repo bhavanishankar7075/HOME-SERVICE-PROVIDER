@@ -220,6 +220,19 @@ function AdminVerifyOTP() {
                 >
                   {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Verify OTP'}
                 </Button>
+
+               <Typography
+                    variant="caption"
+                      textAlign="center"
+                      sx={{
+                      mt: 2, // Adds margin on top for spacing
+                      color: 'error.main', // Uses the theme's main error color (typically red)
+                      fontWeight: 'bold',
+                      display: 'block' // Ensures it takes up the full width for centering
+                        }}
+                    >
+                              NOTE: Please check your spam folder for the OTP email.
+                  </Typography>
               </Stack>
             </Box>
             <Stack direction="column" spacing={1} sx={{ mt: 3, textAlign: 'center' }}>
