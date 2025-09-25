@@ -163,7 +163,7 @@ const AdminSignup = () => {
                 />
                 <TextField
                   margin="dense" label="Password" type="password" value={password}
-                  onChange={(e) => setPassword(e.gittarget.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   variant="outlined" fullWidth required disabled={isLoading}
                   InputProps={{ startAdornment: (<InputAdornment position="start"><LockOutlined color="action" /></InputAdornment>), }}
                 />
