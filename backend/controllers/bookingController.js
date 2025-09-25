@@ -144,6 +144,8 @@ const calculateRevenue = async () => {
 
 
 const createBooking = asyncHandler(async (req, res) => {
+   console.log("--- 1. ENTERED createBooking CONTROLLER ---");
+    console.log("Request Body:", req.body);
   // --- Joi Validation ---
   const { error } = bookingValidationSchema.validate(req.body);
   if (error) {
@@ -155,12 +157,13 @@ const createBooking = asyncHandler(async (req, res) => {
   const { serviceId, scheduledTime, location, paymentMethod, isImmediate, timeSlot } = req.body;
 
   // --- Find Service ---
+   console.log("--- 2. FINDING SERVICE ---");
   const service = await Service.findById(serviceId);
   if (!service) {
     res.status(404);
     throw new Error('Service not found');
   }
-
+ console.log("--- 3. SERVICE FOUND ---", service.name);
   // --- Find Customer & Check Profile ---
   const customer = await User.findById(req.user._id);
   if (!customer) {
@@ -174,26 +177,29 @@ const createBooking = asyncHandler(async (req, res) => {
 
   // --- Validate Availability (if not an immediate booking) ---
   if (!isImmediate) {
-    // MODIFICATION 2: Use 'timeSlot' for robust, server-independent validation.
+     console.log("--- 4. VALIDATING TIME SLOT ---");
+    // MODIFICATION 2: Use 
+    // 'timeSlot' for robust, server-independent validation.
     // This logic no longer depends on the server's local timezone.
     const bookingDate = new Date(scheduledTime);
     const dateStr = bookingDate.toISOString().split('T')[0]; // e.g., "2025-09-26"
     const availableTimes = service.availableSlots.get(dateStr) || [];
-
+console.log(`Checking for slot '${timeSlot}' in [${availableTimes}] on date ${dateStr}`);
     // Check if the provided timeSlot is valid and exists in the available slots.
     if (!timeSlot || !availableTimes.includes(timeSlot)) {
         res.status(400);
         throw new Error(`The selected time slot ${timeSlot || ''} is no longer available for ${dateStr}. Please select another time.`);
     }
-
+ console.log("--- 5. TIME SLOT IS VALID, UPDATING AVAILABILITY ---");
     // Remove the booked slot from the service's availability.
     service.availableSlots.set(dateStr, availableTimes.filter(time => time !== timeSlot));
     if (service.availableSlots.get(dateStr).length === 0) {
       service.availableSlots.delete(dateStr);
     }
     await service.save();
+    console.log("--- 6. SERVICE AVAILABILITY SAVED ---");
   }
-
+ console.log("--- 7. CREATING BOOKING DOCUMENT ---");
   // --- Create the Booking ---
   const booking = await Booking.create({
     customer: req.user._id,
@@ -213,6 +219,7 @@ const createBooking = asyncHandler(async (req, res) => {
     },
     status: 'pending',
   });
+  console.log("--- 8. BOOKING DOCUMENT CREATED ---", booking._id);
 
   // --- Update User's Profile ---
   await User.updateOne(
@@ -246,7 +253,7 @@ const createBooking = asyncHandler(async (req, res) => {
       bookingDetails: booking,
     });
   }
-
+console.log("--- 9. SENDING SUCCESS RESPONSE ---");
   // --- Send Response ---
   res.status(201).json(booking);
 });
