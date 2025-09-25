@@ -804,7 +804,7 @@ exports.assignProvider = asyncHandler(async (req, res) => {
   }
 }); */
 
-exports.getActiveProviders = asyncHandler(async (req, res) => {
+/* exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
     const location = req.query.location;
     const services = req.query.services?.split(',').map(s => s.trim()) || [];
@@ -939,7 +939,216 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
     console.error('[getActiveProviders] Error fetching active providers:', error);
     res.status(500).json({ message: 'Server error while fetching providers' });
   }
+}); */
+
+
+
+
+
+
+
+
+
+
+
+
+
+exports.getActiveProviders = asyncHandler(async (req, res) => {
+  try {
+    const location = req.query.location;
+    const services = req.query.services?.split(',').map(s => s.trim()) || [];
+
+    if (!location) {
+      return res.status(400).json({ message: 'Location is required' });
+    }
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      console.error('[getActiveProviders] GOOGLE_MAPS_API_KEY is not set');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    // Fetch all plan limits and define the date range
+    const plans = await Plan.find({}).lean();
+    const planLimits = {};
+    plans.forEach(plan => {
+      planLimits[plan.name.toLowerCase()] = plan.bookingLimit;
+    });
+    planLimits.free = planLimits.free || 5; // Default for Free plan
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(startOfMonth);
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+    let coords = null;
+    let bookingCity = location; // Default to input location
+    const isSimpleCity = !location.includes(','); // Check if location is a city name (no commas)
+
+    // Only attempt geocoding for complex addresses
+    if (!isSimpleCity) {
+      try {
+        const response = await axios.get(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        );
+        console.log('[getActiveProviders] Geocoding response:', {
+          status: response.data.status,
+          resultsCount: response.data.results.length,
+          error_message: response.data.error_message || 'None'
+        });
+
+        if (response.data.status === 'OK' && response.data.results.length > 0) {
+          coords = response.data.results[0].geometry.location;
+          bookingCity = response.data.results[0].address_components.find(comp => comp.types.includes('locality'))?.long_name || location;
+        } else if (response.data.status === 'ZERO_RESULTS') {
+          console.warn('[getActiveProviders] No geocoding results for location:', location);
+          // Fallback to using location as city
+        } else {
+          console.error('[getActiveProviders] Geocoding failed:', response.data.status, response.data.error_message);
+          return res.status(400).json({ message: `Could not geocode location: ${response.data.status}` });
+        }
+      } catch (error) {
+        console.error('[getActiveProviders] Geocoding error:', error.message);
+        return res.status(500).json({ message: 'Failed to geocode location' });
+      }
+    } else {
+      console.log('[getActiveProviders] Skipping geocoding, using location as city:', location);
+    }
+
+    const query = {
+      role: 'provider',
+      'profile.status': 'active'
+    };
+    if (services.length > 0) {
+      query['profile.skills'] = { $in: services };
+    }
+    // If geocoding failed or skipped, query by city
+    if (!coords && bookingCity) {
+      query['profile.location.details.city'] = { $regex: bookingCity, $options: 'i' }; // Case-insensitive city match
+    } else if (coords) {
+      query['profile.location.coordinates'] = { $exists: true }; // Only require coordinates if geocoding succeeded
+    }
+
+    console.log('[getActiveProviders] MongoDB query:', query);
+
+    const providers = await User.find(query)
+      .select('name email phone profile subscriptionTier subscriptionStatus currentBookingCount subscriptionStartDate')
+      .lean();
+
+    console.log('[getActiveProviders] Providers found:', providers.length);
+
+    const maxDistance = 50 * 1000; // 50 km
+
+    const suitableProviders = await Promise.all(
+      providers.map(async (provider) => {
+        let isWithinDistance = false;
+        if (coords && provider.profile.location.coordinates?.lat && provider.profile.location.coordinates?.lng) {
+          try {
+            const distance = await getDistanceMatrix(
+              `${coords.lat},${coords.lng}`,
+              `${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`
+            );
+            if (distance <= maxDistance) {
+              isWithinDistance = true;
+            }
+          } catch (error) {
+            console.error(`[getActiveProviders] Distance Matrix failed for provider ${provider._id}:`, error.message);
+            if (bookingCity && provider.profile.location.details?.city && bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
+              isWithinDistance = true;
+            }
+          }
+        } else if (bookingCity && provider.profile.location.details?.city && bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
+          isWithinDistance = true;
+        }
+
+        if (!isWithinDistance) {
+          return null; // Exclude provider if not within distance or city
+        }
+
+        // Check booking limit
+        const tier = provider.subscriptionTier || 'free';
+        const limit = planLimits[tier];
+        let isEligible = true;
+        let eligibilityReason = '';
+
+        if (limit > 0) {
+          const bookingCount = provider.currentBookingCount || 0;
+          if (bookingCount >= limit) {
+            isEligible = false;
+            eligibilityReason = `Monthly limit of ${limit} bookings reached.`;
+          }
+        }
+
+        // Check subscription status and expiry
+        let subscriptionStatusMessage = '';
+        if (provider.subscriptionStatus === 'past_due') {
+          isEligible = false;
+          eligibilityReason = 'Subscription payment is past due.';
+          subscriptionStatusMessage = 'Payment required to restore active status.';
+        } else if (provider.subscriptionTier !== 'free' && provider.subscriptionStartDate) {
+          const expiryDate = new Date(provider.subscriptionStartDate);
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+          const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+          if (daysUntilExpiry <= 3 && daysUntilExpiry > 0) {
+            subscriptionStatusMessage = `Subscription expires in ${daysUntilExpiry} day(s).`;
+            if (global.io) {
+              global.io.to(provider._id.toString()).emit('subscriptionWarning', {
+                message: `Your ${provider.subscriptionTier} subscription expires in ${daysUntilExpiry} day(s). Please renew to continue receiving bookings.`
+              });
+            }
+          }
+        }
+
+        return {
+          ...provider,
+          isEligible,
+          eligibilityReason,
+          bookingLimit: limit,
+          subscriptionStatusMessage
+        };
+      })
+    );
+
+    const filteredProviders = suitableProviders.filter((p) => p !== null);
+    console.log('[getActiveProviders] Suitable providers:', filteredProviders.length);
+    res.status(200).json(filteredProviders);
+  } catch (error) {
+    console.error('[getActiveProviders] Error fetching active providers:', error);
+    res.status(500).json({ message: 'Server error while fetching providers' });
+  }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 exports.assignProvider = asyncHandler(async (req, res) => {
   try {

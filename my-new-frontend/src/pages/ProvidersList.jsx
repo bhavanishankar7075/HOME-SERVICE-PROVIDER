@@ -21,6 +21,22 @@ const modalStyle = {
   borderRadius: 2,
 };
 
+// Utility function to extract city from a full address
+const getCityFromLocation = (location) => {
+  if (!location || typeof location !== 'string') return null;
+  // Split by comma and look for city (e.g., Visakhapatnam is often before state)
+  const parts = location.split(',').map(part => part.trim());
+  // Assuming city is before state (e.g., "Andhra Pradesh") or postal code
+  const stateIndex = parts.findIndex(part => part.includes('Andhra Pradesh') || /\d{6}/.test(part));
+  if (stateIndex > 0) {
+    return parts[stateIndex - 1]; // City is typically just before state or postal code
+  }
+  // Fallback: Try to find a known city name or return first significant part
+  const knownCities = ['Visakhapatnam', 'Hyderabad', 'Vijayawada', 'Guntur']; // Add more as needed
+  const foundCity = parts.find(part => knownCities.includes(part));
+  return foundCity || parts[0] || null; // Fallback to first part if no city found
+};
+
 const ProvidersList = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,17 +62,19 @@ const ProvidersList = () => {
     const fetchProviders = async () => {
       setLoading(true);
       const selectedLocation = location.state?.location || reduxLocation;
+      const city = getCityFromLocation(selectedLocation);
 
       // DEBUG: Log critical inputs
-      console.log('[ProvidersList] Selected location:', selectedLocation);
+      console.log('[ProvidersList] Raw selected location:', selectedLocation);
+      console.log('[ProvidersList] Extracted city:', city);
       console.log('[ProvidersList] Skills filter:', skillsFilter);
       console.log('[ProvidersList] User:', user ? { id: user.id, role: user.role } : 'No user');
       console.log('[ProvidersList] Token present:', !!token);
 
-      if (!selectedLocation) {
-        setError('Please select a location to view providers.');
+      if (!city) {
+        setError('Please select a valid city to view providers.');
         setLoading(false);
-        navigate('/location', { state: { error: 'Location is required to view providers' } }); // Redirect to location selection
+        navigate('/location', { state: { error: 'Valid city is required to view providers' } });
         return;
       }
       if (!token || !user) {
@@ -74,7 +92,7 @@ const ProvidersList = () => {
       }
 
       const endpoint = `${API_URL}/api/admin/providers/active`;
-      const params = { location: selectedLocation };
+      const params = { location: city }; // Use extracted city
       if (skillsFilter) {
         params.services = skillsFilter;
       }
