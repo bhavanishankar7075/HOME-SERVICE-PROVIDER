@@ -144,89 +144,57 @@ const calculateRevenue = async () => {
 
 
 const createBooking = asyncHandler(async (req, res) => {
+  // --- Joi Validation ---
   const { error } = bookingValidationSchema.validate(req.body);
   if (error) {
     res.status(400);
     throw new Error(error.details[0].message);
   }
 
-  const { serviceId, scheduledTime, location, paymentMethod, isImmediate } = req.body;
-  console.log(`[createBooking] Payload:`, { serviceId, scheduledTime, location, paymentMethod, isImmediate });
+  // MODIFICATION 1: Destructure 'timeSlot' from the request body.
+  const { serviceId, scheduledTime, location, paymentMethod, isImmediate, timeSlot } = req.body;
 
+  // --- Find Service ---
   const service = await Service.findById(serviceId);
   if (!service) {
     res.status(404);
     throw new Error('Service not found');
   }
 
+  // --- Find Customer & Check Profile ---
   const customer = await User.findById(req.user._id);
   if (!customer) {
     res.status(404);
     throw new Error('Customer profile not found');
   }
-
   if (!customer.name || !customer.email || !customer.phone || !customer.profile) {
     res.status(400);
     throw new Error('Please complete your profile (name, email, phone, and profile details) before booking');
   }
 
- if (!isImmediate) {
-    // --- Start of Changed Block ---
-
-    // The scheduledTime from req.body is already a UTC ISO string
-    // like "2025-09-26T03:30:00.000Z"
-    const bookingDate = new Date(scheduledTime); 
-
-    // 1. Get the date part in 'YYYY-MM-DD' format, ensuring it's in UTC.
-    const dateStr = bookingDate.toISOString().split('T')[0];
-
-    // 2. IMPORTANT: Extract the time from the ORIGINAL request body, NOT the new Date object.
-    // The req.body.scheduledTime contains the original time info before conversion.
-    // This assumes the frontend sends the time like '09:00'.
-    // Let's adjust the frontend logic slightly to pass this. Or, a better way is
-    // to pass the selected time slot directly.
-    
-    // For now, let's assume you pass 'time' in the body.
-    // If not, we'll adjust the frontend.
-    // Let's modify the frontend to send the chosen time slot.
-    
-    // A better approach in the backend is to find the slot that matches.
-    // Let's stick to fixing the backend logic first.
-    // The frontend sends `new Date(date + 'T' + time).toISOString()`.
-    // The backend receives it. The `time` part is what you need.
-    // It's better to send the selected time slot explicitly.
-
-    // Let's assume you modify the frontend payload to include `timeSlot`.
-    const { timeSlot } = req.body; // e.g., "09:00"
-
+  // --- Validate Availability (if not an immediate booking) ---
+  if (!isImmediate) {
+    // MODIFICATION 2: Use 'timeSlot' for robust, server-independent validation.
+    // This logic no longer depends on the server's local timezone.
+    const bookingDate = new Date(scheduledTime);
+    const dateStr = bookingDate.toISOString().split('T')[0]; // e.g., "2025-09-26"
     const availableTimes = service.availableSlots.get(dateStr) || [];
-    
-    console.log(`[createBooking] Checking availability...`);
-    console.log(`Date String: ${dateStr}`);
-    console.log(`Time Slot to check: ${timeSlot}`);
-    console.log(`Available slots for this date:`, availableTimes);
 
-    if (!availableTimes.includes(timeSlot)) {
-      res.status(400);
-      throw new Error(`The selected time slot ${timeSlot} is no longer available for ${dateStr}. Please select another time.`);
+    // Check if the provided timeSlot is valid and exists in the available slots.
+    if (!timeSlot || !availableTimes.includes(timeSlot)) {
+        res.status(400);
+        throw new Error(`The selected time slot ${timeSlot || ''} is no longer available for ${dateStr}. Please select another time.`);
     }
 
-    // Remove the booked slot
+    // Remove the booked slot from the service's availability.
     service.availableSlots.set(dateStr, availableTimes.filter(time => time !== timeSlot));
     if (service.availableSlots.get(dateStr).length === 0) {
       service.availableSlots.delete(dateStr);
     }
-    // --- End of Changed Block ---
-
     await service.save();
   }
 
-  // ... (rest of the function remains the same)
-  // ... (creating booking, updating user, emitting socket events)
-
-  res.status(201).json(booking);
-});
-
+  // --- Create the Booking ---
   const booking = await Booking.create({
     customer: req.user._id,
     service: serviceId,
@@ -246,6 +214,7 @@ const createBooking = asyncHandler(async (req, res) => {
     status: 'pending',
   });
 
+  // --- Update User's Profile ---
   await User.updateOne(
     { _id: req.user._id },
     {
@@ -261,26 +230,24 @@ const createBooking = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log('Booking Created:', {
-    bookingId: booking._id,
-    customerId: booking.customer,
-    customerName: customer.name,
-    profileExists: !!customer.profile,
-    profileImage: customer.profile?.image || '/images/default-user.png',
-  });
+  console.log('Booking Created Successfully:', { bookingId: booking._id });
 
+  // --- Emit Socket Events for Real-time Updates ---
   if (global.io) {
+    // Notify the customer
     global.io.to(req.user._id.toString()).emit('bookingStatusUpdate', {
       bookingId: booking._id,
       message: `Your booking for ${service.name} is confirmed and is pending provider assignment`,
       newStatus: 'pending',
     });
+    // Notify admins
     global.io.to('admin_room').emit('newPendingBooking', {
       message: `New booking #${booking._id.toString().slice(-6)} needs a provider`,
       bookingDetails: booking,
     });
   }
 
+  // --- Send Response ---
   res.status(201).json(booking);
 });
 
