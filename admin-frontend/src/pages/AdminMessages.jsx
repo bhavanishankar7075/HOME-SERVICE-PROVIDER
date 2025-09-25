@@ -8,9 +8,10 @@ import {
   Box, Typography, Paper, CircularProgress, Alert, ToggleButton, ToggleButtonGroup, Card, CardContent, CardActions,
   IconButton, Tooltip, TextField, Modal, Button, Checkbox, Avatar, Chip,
 } from '@mui/material';
-import { MarkEmailRead as MarkReadIcon, Delete as DeleteIcon, Reply as ReplyIcon, ArrowBack} from '@mui/icons-material';
+import { MarkEmailRead as MarkReadIcon, Delete as DeleteIcon, Reply as ReplyIcon, ArrowBack } from '@mui/icons-material';
 
-const socket = io('http://localhost:5000');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const socket = io(API_URL);
 
 const modalStyle = {
   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -42,9 +43,9 @@ const AdminMessages = () => {
       }
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/admin/messages', {
+        const response = await axios.get(`${API_URL}/api/admin/messages`, {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000 // **FIX: Added a 10-second timeout**
+          timeout: 10000
         });
         setMessages(response.data);
       } catch (err) {
@@ -90,7 +91,7 @@ const AdminMessages = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      const { data: updatedMessage } = await axios.put(`http://localhost:5000/api/admin/messages/${id}/read`, {}, {
+      const { data: updatedMessage } = await axios.put(`${API_URL}/api/admin/messages/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(messages.map((msg) => (msg._id === id ? updatedMessage : msg)));
@@ -103,7 +104,7 @@ const AdminMessages = () => {
   const handleDeleteMessage = async (id) => {
     if (window.confirm('Are you sure you want to delete this message permanently?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/messages/${id}`, {
+        await axios.delete(`${API_URL}/api/admin/messages/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(messages.filter((msg) => msg._id !== id));
@@ -125,7 +126,7 @@ const AdminMessages = () => {
     if (!replyText.trim()) return;
     setIsReplying(true);
     try {
-      await axios.post(`http://localhost:5000/api/admin/messages/${currentMessage._id}/reply`, 
+      await axios.post(`${API_URL}/api/admin/messages/${currentMessage._id}/reply`, 
         { replyMessage: replyText }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -155,7 +156,7 @@ const AdminMessages = () => {
   const handleBulkDelete = async () => {
     if (window.confirm(`Delete ${selectedMessages.length} selected messages?`)) {
       try {
-        await axios.post('http://localhost:5000/api/admin/messages/bulk-delete', 
+        await axios.post(`${API_URL}/api/admin/messages/bulk-delete`, 
           { messageIds: selectedMessages }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -169,7 +170,7 @@ const AdminMessages = () => {
 
   const handleBulkMarkAsRead = async () => {
     try {
-      await axios.post('http://localhost:5000/api/admin/messages/bulk-read', 
+      await axios.post(`${API_URL}/api/admin/messages/bulk-read`, 
         { messageIds: selectedMessages }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -198,8 +199,8 @@ const AdminMessages = () => {
             sx={{ width: { xs: '100%', md: 300 } }}
           />
           <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate("/admin/dashboard")}>
-                        Back to Dashboard
-                      </Button>
+            Back to Dashboard
+          </Button>
           <ToggleButtonGroup color="primary" value={filter} exclusive onChange={handleFilterChange}>
             <ToggleButton value="new">New</ToggleButton>
             <ToggleButton value="read">Read</ToggleButton>
@@ -262,7 +263,6 @@ const AdminMessages = () => {
         <Paper sx={{ p: 4, textAlign: 'center' }}><Typography variant="h6">No messages to display.</Typography></Paper>
       )}
 
-      {/* Reply Modal */}
       <Modal open={isReplyModalOpen} onClose={handleCloseReplyModal}>
         <Box sx={modalStyle}>
           <Typography variant="h6">Reply to {currentMessage?.customerId?.name}</Typography>

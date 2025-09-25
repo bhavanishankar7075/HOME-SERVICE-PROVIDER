@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/CustomerFeedback.css';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const CustomerFeedbacks = () => {
   const [feedbacks, setFeedbacks] = useState([]);

@@ -6,13 +6,15 @@ import {
 import { Delete, ArrowBack, Refresh } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from "./axiosInstance";
-import { useSelector,  } from 'react-redux';
+import { useSelector } from 'react-redux';
 import io from 'socket.io-client';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ActivityLogs = () => {
   const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
-      const { token, isAuthenticated, user } = useSelector((state) => state.auth);
+  const { token, isAuthenticated, user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
   const [selectedLogs, setSelectedLogs] = useState([]);
@@ -20,13 +22,13 @@ const ActivityLogs = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
-  
-  const socket = io('http://localhost:5000', {
+
+  const socket = io(API_URL, {
     withCredentials: true,
     extraHeaders: { Authorization: `Bearer ${token}` },
     transports: ['websocket', 'polling'],
     cors: {
-      origin: 'http://localhost:3000',
+      origin: API_URL,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -35,7 +37,7 @@ const ActivityLogs = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/admin/logs', {
+      const response = await axios.get(`${API_URL}/api/admin/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLogs(response.data);
@@ -52,17 +54,14 @@ const ActivityLogs = () => {
     }
   };
 
-
   useEffect(() => {
-        console.log('ActivityLogs: Mounting, auth state:', { token, isAuthenticated, user });
-        if (!token || !isAuthenticated || user?.role !== 'admin') {
-          console.log('ActivityLogs: Invalid auth state, redirecting to /admin/login');
-          navigate('/admin/login', { replace: true });
-          return;
-        }
-        fetchLogs();
-
-
+    console.log('ActivityLogs: Mounting, auth state:', { token, isAuthenticated, user });
+    if (!token || !isAuthenticated || user?.role !== 'admin') {
+      console.log('ActivityLogs: Invalid auth state, redirecting to /admin/login');
+      navigate('/admin/login', { replace: true });
+      return;
+    }
+    fetchLogs();
 
     socket.on('connect_error', (err) => {
       console.error('Socket.IO connection error:', err.message);
@@ -80,7 +79,7 @@ const ActivityLogs = () => {
     if (window.confirm('Are you sure you want to delete this log?')) {
       setLoading(true);
       try {
-        await axios.delete(`http://localhost:5000/api/admin/logs/${logId}`, {
+        await axios.delete(`${API_URL}/api/admin/logs/${logId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLogs(logs.filter(log => log._id !== logId));
@@ -98,31 +97,30 @@ const ActivityLogs = () => {
     setOpenDialog(true);
   };
 
- // In ActivityLogs.jsx, update handleDialogClose
-const handleDialogClose = async (confirm) => {
-  setOpenDialog(false);
-  if (confirm) {
-    setLoading(true);
-    try {
-      console.log('Sending request to:', 'http://localhost:5000/api/admin/logs/bulk-delete');
-      console.log('Sending logIds for bulk delete:', selectedLogs);
-      const response = await axios.post('http://localhost:5000/api/admin/logs/bulk-delete', {
-        logIds: selectedLogs,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log('Response:', response.data);
-      setLogs(logs.filter(log => !selectedLogs.includes(log._id)));
-      setSelectedLogs([]);
-      setMessage({ open: true, text: 'Logs deleted successfully!', severity: 'success' });
-    } catch (error) {
-      console.error('Error deleting logs:', error.response?.data || error.message);
-      setMessage({ open: true, text: `Failed to delete logs: ${error.response?.data?.message || error.message}`, severity: 'error' });
-    } finally {
-      setLoading(false);
+  const handleDialogClose = async (confirm) => {
+    setOpenDialog(false);
+    if (confirm) {
+      setLoading(true);
+      try {
+        console.log('Sending request to:', `${API_URL}/api/admin/logs/bulk-delete`);
+        console.log('Sending logIds for bulk delete:', selectedLogs);
+        const response = await axios.post(`${API_URL}/api/admin/logs/bulk-delete`, {
+          logIds: selectedLogs,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Response:', response.data);
+        setLogs(logs.filter(log => !selectedLogs.includes(log._id)));
+        setSelectedLogs([]);
+        setMessage({ open: true, text: 'Logs deleted successfully!', severity: 'success' });
+      } catch (error) {
+        console.error('Error deleting logs:', error.response?.data || error.message);
+        setMessage({ open: true, text: `Failed to delete logs: ${error.response?.data?.message || error.message}`, severity: 'error' });
+      } finally {
+        setLoading(false);
+      }
     }
-  }
-};
+  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -133,7 +131,7 @@ const handleDialogClose = async (confirm) => {
   };
 
   const handleSelectLog = (logId) => {
-    setSelectedLogs(prev => 
+    setSelectedLogs(prev =>
       prev.includes(logId) ? prev.filter(id => id !== logId) : [...prev, logId]
     );
   };

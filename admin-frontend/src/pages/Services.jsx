@@ -11,6 +11,8 @@ import Pagination from '@mui/material/Pagination';
 import io from 'socket.io-client';
 import '../styles/Services.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Services = () => {
   const [services, setServices] = useState([]);
   const [newService, setNewService] = useState({ name: '', description: '', price: '', category: 'Home Maintenance', image: null, imageUrl: null, additionalImages: [], offer: '', deal: '' });
@@ -35,7 +37,7 @@ const Services = () => {
 
   useEffect(() => {
     fetchServices();
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(API_URL, {
       withCredentials: true,
       extraHeaders: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
     });
@@ -102,7 +104,7 @@ const Services = () => {
         setMessage({ open: true, text: 'No authentication token found. Please log in.', severity: 'error' });
         return;
       }
-      const response = await axios.get('http://localhost:5000/api/services', {
+      const response = await axios.get(`${API_URL}/api/services`, {
         headers: { Authorization: `Bearer ${authToken}` },
         params: {
           name: searchTerm,
@@ -145,7 +147,7 @@ const Services = () => {
         if (img.file) formData.append('additionalImages', img.file);
       });
       // Backend will emit 'serviceAdded'
-      await axios.post('http://localhost:5000/api/services', formData, {
+      await axios.post(`${API_URL}/api/services`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -186,7 +188,7 @@ const Services = () => {
       }
       const retainedImageUrls = editingService.additionalImages
         .filter(img => img.url && !img.file)
-        .map(img => img.url.replace('http://localhost:5000', ''))
+        .map(img => img.url.replace(API_URL, ''))
         .filter(url => url);
       if (retainedImageUrls.length > 0) {
         formData.append('retainedImageUrls', JSON.stringify(retainedImageUrls));
@@ -198,7 +200,7 @@ const Services = () => {
       formData.append('availableSlots', JSON.stringify(availableSlotsObj));
 
       // Backend will emit 'serviceUpdated'
-      await axios.put(`http://localhost:5000/api/services/${id}`, formData, {
+      await axios.put(`${API_URL}/api/services/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -222,7 +224,7 @@ const Services = () => {
     setLoading(true);
     try {
       // Backend will emit 'serviceDeleted'
-      await axios.delete(`http://localhost:5000/api/services/${deleteDialog.id}`, {
+      await axios.delete(`${API_URL}/api/services/${deleteDialog.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage({ open: true, text: 'Service deleted successfully!', severity: 'success' });
@@ -247,7 +249,7 @@ const Services = () => {
     setLoading(true);
     try {
       // Backend will emit 'servicesBulkDeleted'
-      await axios.post('http://localhost:5000/api/services/bulk-delete', { serviceIds: selectedServices }, {
+      await axios.post(`${API_URL}/api/services/bulk-delete`, { serviceIds: selectedServices }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage({ open: true, text: 'Services deleted successfully!', severity: 'success' });
@@ -299,7 +301,7 @@ const Services = () => {
 
   const handleSlotUpdate = async (serviceId, date, times) => {
     try {
-        await axios.put(`http://localhost:5000/api/admin/services/slots`, 
+        await axios.put(`${API_URL}/api/admin/services/slots`, 
             { serviceId, date, times },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -584,7 +586,7 @@ const Services = () => {
                 )}
                 {service.image && (
                   <img
-                    src={`http://localhost:5000${service.image}`}
+                    src={`${API_URL}${service.image}`}
                     alt={service.name}
                     style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: 8, marginTop: '16px' }}
                     onError={(e) => { e.target.src = 'https://via.placeholder.com/300.png?text=No+Image'; }}
@@ -595,7 +597,7 @@ const Services = () => {
                     {service.additionalImages.map((img, index) => (
                       <img
                         key={index}
-                        src={`http://localhost:5000${img}`}
+                        src={`${API_URL}${img}`}
                         alt={`Additional ${index}`}
                         style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: 8 }}
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/300.png?text=No+Image'; }}
@@ -608,8 +610,8 @@ const Services = () => {
                 <IconButton
                   onClick={() => setEditingService({
                     ...service,
-                    imageUrl: service.image ? `http://localhost:5000${service.image}` : null,
-                    additionalImages: service.additionalImages.map(img => ({ url: `http://localhost:5000${img}` })),
+                    imageUrl: service.image ? `${API_URL}${service.image}` : null,
+                    additionalImages: service.additionalImages.map(img => ({ url: `${API_URL}${img}` })),
                     availableSlots: service.availableSlots ? new Map(Object.entries(service.availableSlots)) : new Map(),
                   })}
                   sx={{ color: '#4a90e2', '&:hover': { color: '#357abd' } }}

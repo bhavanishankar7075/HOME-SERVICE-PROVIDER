@@ -11,6 +11,8 @@ import io from 'socket.io-client';
 import { ArrowBack } from '@mui/icons-material';
 import { logout } from '../store/authSlice';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const AdminSettings = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -34,7 +36,7 @@ const AdminSettings = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/admin/users', {
+        const response = await axios.get(`${API_URL}/api/admin/users`, {
           headers: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
         });
         const adminData = Array.isArray(response.data) ? response.data.find(user => user.role === 'admin') : response.data;
@@ -55,7 +57,7 @@ const AdminSettings = () => {
     };
     fetchAdminData();
 
-    const socketInstance = io('http://localhost:5000', {
+    const socketInstance = io(API_URL, {
       withCredentials: true,
       extraHeaders: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
     });
@@ -91,7 +93,7 @@ const AdminSettings = () => {
       }
 
       const response = await axios.put(
-        'http://localhost:5000/api/admin/settings',
+        `${API_URL}/api/admin/settings`,
         { 
           name: newName, 
           email: newEmail, 
