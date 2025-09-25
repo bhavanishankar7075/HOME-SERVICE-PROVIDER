@@ -16,7 +16,7 @@ const path = require('path');
 // Multer storage and file filter configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'Uploads/services/');
+    cb(null, 'uploads/services/');
   },
   filename: (req, file, cb) => {
     cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`);
