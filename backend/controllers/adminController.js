@@ -13,7 +13,7 @@ const axios = require('axios');
 // In-memory cache for Distance Matrix results (consider Redis for persistence)
 const distanceCache = new Map();
 
-async function getDistanceMatrix(origin, destination) {
+/* async function getDistanceMatrix(origin, destination) {
   const cacheKey = `${origin}-${destination}`;
   if (distanceCache.has(cacheKey)) {
     return distanceCache.get(cacheKey);
@@ -30,7 +30,7 @@ async function getDistanceMatrix(origin, destination) {
   const distance = response.data.rows[0].elements[0].distance.value;
   distanceCache.set(cacheKey, distance);
   return distance;
-}
+} */
 
 // @desc    Get all users for admin dashboard
 // @route   GET /api/admin/users
@@ -804,6 +804,37 @@ exports.assignProvider = asyncHandler(async (req, res) => {
   }
 }); */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
     const location = req.query.location;
@@ -1164,17 +1195,89 @@ exports.assignProvider = asyncHandler(async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+async function getDistanceMatrix(origin, destination) {
+  const [originLat, originLng] = origin.split(',').map(coord => parseFloat(coord).toFixed(6));
+  const [destLat, destLng] = destination.split(',').map(coord => parseFloat(coord).toFixed(6));
+  const cacheKey = `${originLat},${originLng}-${destLat},${destLng}`;
+  if (distanceCache.has(cacheKey)) {
+    console.log(`[getDistanceMatrix] Cache hit for key: ${cacheKey}`);
+    return distanceCache.get(cacheKey);
+  }
+
+  const retry = async (fn, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        console.log(`[getDistanceMatrix] Retrying API call (${i + 1}/${retries}) for ${cacheKey}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
+
+  try {
+    const response = await retry(() =>
+      axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+        params: {
+          origins: origin,
+          destinations: destination,
+          key: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      })
+    );
+    console.log('[getDistanceMatrix] Response:', {
+      status: response.data.status,
+      elementStatus: response.data.rows?.[0]?.elements?.[0]?.status || 'N/A',
+      error_message: response.data.error_message || 'None'
+    });
+
+    if (response.data.status === 'OK' && response.data.rows?.[0]?.elements?.[0]?.status === 'OK') {
+      const distance = response.data.rows[0].elements[0].distance.value;
+      distanceCache.set(cacheKey, distance);
+      console.log(`[getDistanceMatrix] Cached distance for ${cacheKey}: ${distance}m`);
+      return distance;
+    } else {
+      const errorMessage = response.data.error_message || 'Unknown error';
+      const elementStatus = response.data.rows?.[0]?.elements?.[0]?.status || 'N/A';
+      console.error(`[getDistanceMatrix] Failed for ${cacheKey}: status=${response.data.status}, elementStatus=${elementStatus}, error=${errorMessage}`);
+      if (response.data.status === 'REQUEST_DENIED') {
+        throw new Error('Distance Matrix failed: Invalid or disabled Google Maps API key');
+      } else if (response.data.status === 'OVER_QUERY_LIMIT') {
+        throw new Error('Distance Matrix API quota exceeded');
+      } else if (elementStatus === 'NOT_FOUND' || elementStatus === 'ZERO_RESULTS') {
+        throw new Error('Invalid or unroutable coordinates');
+      }
+      throw new Error(`Distance Matrix failed: ${errorMessage}`);
+    }
+  } catch (error) {
+    console.error(`[getDistanceMatrix] Error for ${cacheKey}: ${error.response?.data ? JSON.stringify(error.response.data) : error.message}`);
+    throw error;
+  }
+}
+
 exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
     const location = req.query.location?.trim();
     const services = req.query.services?.split(',').map(s => s.trim()) || [];
 
     if (!location) {
-      console.error('[getActiveProviders] Location is missing');
+      console.error('[getActiveProviders] Location missing');
       return res.status(400).json({ message: 'Location is required' });
     }
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      console.error('[getActiveProviders] GOOGLE_MAPS_API_KEY is not set');
+      return res.status(500).json({ message: 'Server configuration error: Google Maps API key missing' });
+    }
 
-    // Fetch all plan limits and define the date range
+    // Fetch plan limits
     const plans = await Plan.find({}).lean();
     const planLimits = {};
     plans.forEach(plan => {
@@ -1188,15 +1291,10 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
     endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
     let coords = null;
-    let bookingCity = location; // Default to input location
-    const isSimpleCity = !location.includes(','); // Check if location is a city name (no commas)
+    let bookingCity = location;
+    const isSimpleCity = !location.includes(',');
 
-    // Only attempt geocoding for complex addresses
     if (!isSimpleCity) {
-      if (!process.env.GOOGLE_MAPS_API_KEY) {
-        console.error('[getActiveProviders] GOOGLE_MAPS_API_KEY is not set');
-        return res.status(500).json({ message: 'Server configuration error: Google Maps API key missing' });
-      }
       try {
         const response = await axios.get(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
@@ -1210,22 +1308,23 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
         if (response.data.status === 'OK' && response.data.results.length > 0) {
           coords = response.data.results[0].geometry.location;
           bookingCity = response.data.results[0].address_components.find(comp => comp.types.includes('locality'))?.long_name || location;
+          console.log(`[getActiveProviders] Geocoded location ${location}: lat=${coords.lat}, lng=${coords.lng}, city=${bookingCity}`);
         } else if (response.data.status === 'REQUEST_DENIED') {
           console.error('[getActiveProviders] Geocoding failed: REQUEST_DENIED, check API key configuration');
           return res.status(500).json({ message: 'Geocoding failed: Invalid or disabled Google Maps API key' });
         } else if (response.data.status === 'ZERO_RESULTS') {
           console.warn('[getActiveProviders] No geocoding results for location:', location);
-          // Fallback to using location as city
+          // Fallback to city
         } else {
           console.error('[getActiveProviders] Geocoding failed:', response.data.status, response.data.error_message);
           return res.status(400).json({ message: `Could not geocode location: ${response.data.status}` });
         }
       } catch (error) {
-        console.error('[getActiveProviders] Geocoding error:', error.message);
+        console.error(`[getActiveProviders] Geocoding error for location ${location}:`, error.message);
         return res.status(500).json({ message: 'Failed to geocode location: Server error' });
       }
     } else {
-      console.log('[getActiveProviders] Skipping geocoding, using location as city:', location);
+      console.log('[getActiveProviders] Skipping geocoding, using location as city:', bookingCity);
     }
 
     const query = {
@@ -1236,45 +1335,54 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
       query['profile.skills'] = { $in: services };
     }
     if (!coords && bookingCity) {
-      query['profile.location.details.city'] = { $regex: `^${bookingCity}$`, $options: 'i' }; // Exact case-insensitive match
+      query['profile.location.details.city'] = { $regex: `^${bookingCity}$`, $options: 'i' };
     } else if (coords) {
-      query['profile.location.coordinates'] = { $exists: true }; // Only require coordinates if geocoding succeeded
+      query['profile.location.coordinates'] = { $exists: true };
     }
 
-    console.log('[getActiveProviders] MongoDB query:', query);
-
+    console.log('[getActiveProviders] MongoDB query:', JSON.stringify(query));
     const providers = await User.find(query)
       .select('name email phone profile subscriptionTier subscriptionStatus currentBookingCount subscriptionStartDate')
       .lean();
+    console.log(`[getActiveProviders] Providers found: ${providers.length}`);
 
-    console.log('[getActiveProviders] Providers found:', providers.length);
-
-    const maxDistance = 50 * 1000; // 50 km
+    const maxDistance = 50 * 1000;
 
     const suitableProviders = await Promise.all(
       providers.map(async (provider) => {
         let isWithinDistance = false;
-        if (coords && provider.profile.location.coordinates?.lat && provider.profile.location.coordinates?.lng) {
-          try {
-            const distance = await getDistanceMatrix(
-              `${coords.lat},${coords.lng}`,
-              `${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`
-            );
-            if (distance <= maxDistance) {
-              isWithinDistance = true;
-            }
-          } catch (error) {
-            console.error(`[getActiveProviders] Distance Matrix failed for provider ${provider._id}:`, error.message);
-            if (bookingCity && provider.profile.location.details?.city && bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
-              isWithinDistance = true;
+        if (coords && provider.profile.location?.coordinates?.lat && provider.profile.location?.coordinates?.lng) {
+          const cacheKey = `${coords.lat},${coords.lng}:${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`;
+          if (distanceCache.has(cacheKey)) {
+            const distance = distanceCache.get(cacheKey);
+            console.log(`[getActiveProviders] Using cached distance for provider ${provider._id}: ${distance}m`);
+            isWithinDistance = distance <= maxDistance;
+          } else {
+            try {
+              const distance = await getDistanceMatrix(
+                `${coords.lat},${coords.lng}`,
+                `${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`
+              );
+              isWithinDistance = distance <= maxDistance;
+              console.log(`[getActiveProviders] Provider ${provider._id} distance: ${distance}m, included: ${isWithinDistance}`);
+            } catch (error) {
+              console.error(`[getActiveProviders] Distance Matrix failed for provider ${provider._id}: ${error.message}`);
+              if (bookingCity && provider.profile.location?.details?.city && 
+                  bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
+                console.log(`[getActiveProviders] Provider ${provider._id} included via city fallback: ${bookingCity}`);
+                isWithinDistance = true;
+              }
             }
           }
-        } else if (bookingCity && provider.profile.location.details?.city && bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
+        } else if (bookingCity && provider.profile.location?.details?.city && 
+            bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
+          console.log(`[getActiveProviders] Provider ${provider._id} included via city fallback: ${bookingCity}`);
           isWithinDistance = true;
         }
 
         if (!isWithinDistance) {
-          return null; // Exclude provider if not within distance or city
+          console.log(`[getActiveProviders] Provider ${provider._id} excluded: Not within distance or no city match`);
+          return null;
         }
 
         // Check booking limit
@@ -1288,15 +1396,17 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
           if (bookingCount >= limit) {
             isEligible = false;
             eligibilityReason = `Monthly limit of ${limit} bookings reached.`;
+            console.log(`[getActiveProviders] Provider ${provider._id} excluded: ${eligibilityReason}`);
           }
         }
 
-        // Check subscription status and expiry
+        // Check subscription status
         let subscriptionStatusMessage = '';
         if (provider.subscriptionStatus === 'past_due') {
           isEligible = false;
           eligibilityReason = 'Subscription payment is past due.';
           subscriptionStatusMessage = 'Payment required to restore active status.';
+          console.log(`[getActiveProviders] Provider ${provider._id} excluded: ${eligibilityReason}`);
         } else if (provider.subscriptionTier !== 'free' && provider.subscriptionStartDate) {
           const expiryDate = new Date(provider.subscriptionStartDate);
           expiryDate.setMonth(expiryDate.getMonth() + 1);
@@ -1322,7 +1432,7 @@ exports.getActiveProviders = asyncHandler(async (req, res) => {
     );
 
     const filteredProviders = suitableProviders.filter((p) => p !== null);
-    console.log('[getActiveProviders] Suitable providers:', filteredProviders.length);
+    console.log(`[getActiveProviders] Suitable providers: ${filteredProviders.length}`);
     res.status(200).json(filteredProviders);
   } catch (error) {
     console.error('[getActiveProviders] Error fetching active providers:', error);
@@ -1353,12 +1463,6 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     }
 
     // Check subscription status
-    if (provider.subscriptionStatus === 'past_due') {
-      console.error('[assignProvider] Provider subscription past due:', providerId);
-      return res.status(400).json({ message: 'Provider’s subscription is past due and cannot accept bookings.' });
-    }
-
-    // Check booking limit
     const plans = await Plan.find({}).lean();
     const planLimits = {};
     plans.forEach(plan => {
@@ -1368,12 +1472,16 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     const tier = provider.subscriptionTier || 'free';
     const limit = planLimits[tier];
 
+    if (provider.subscriptionStatus === 'past_due') {
+      console.error('[assignProvider] Provider subscription past due:', providerId);
+      return res.status(400).json({ message: 'Provider’s subscription is past due and cannot accept bookings.' });
+    }
+
     if (limit > 0 && provider.currentBookingCount >= limit) {
-      console.error('[assignProvider] Provider reached booking limit:', { providerId, limit, currentBookingCount: provider.currentBookingCount });
+      console.error(`[assignProvider] Provider ${providerId} reached booking limit: ${limit}`);
       return res.status(400).json({ message: `Provider has reached their monthly booking limit of ${limit}.` });
     }
 
-    // Skip geocoding for simple city names
     let bookingCoords = booking.coordinates;
     let bookingCity = booking.location?.trim();
     const isSimpleCity = bookingCity && !bookingCity.includes(',');
@@ -1384,9 +1492,9 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     }
     console.log(`[assignProvider] Using API key ending in ${process.env.GOOGLE_MAPS_API_KEY.slice(-4)}`);
 
-    if (!isSimpleCity && (!bookingCoords || !bookingCoords.lat || !bookingCoords.lng ||
-        isNaN(bookingCoords.lat) || isNaN(bookingCoords.lng) ||
-        bookingCoords.lat === 0 || bookingCoords.lng === 0 ||
+    if (!isSimpleCity && (!bookingCoords || !bookingCoords.lat || !bookingCoords.lng || 
+        isNaN(bookingCoords.lat) || isNaN(bookingCoords.lng) || 
+        bookingCoords.lat === 0 || bookingCoords.lng === 0 || 
         Math.abs(bookingCoords.lat) > 90 || Math.abs(bookingCoords.lng) > 180)) {
       try {
         const response = await axios.get(
@@ -1440,18 +1548,18 @@ exports.assignProvider = asyncHandler(async (req, res) => {
         console.error(`[assignProvider] Reverse geocoding error for booking ${bookingId}:`, error.message);
       }
     } else {
-      console.log('[assignProvider] Skipping geocoding, using booking location as city:', bookingCity);
+      console.log('[assignProvider] Skipping geocoding, using location as city:', bookingCity);
     }
 
-    if (!provider.profile.location?.coordinates ||
-        isNaN(provider.profile.location.coordinates.lat) ||
-        isNaN(provider.profile.location.coordinates.lng) ||
-        provider.profile.location.coordinates.lat === 0 ||
-        provider.profile.location.coordinates.lng === 0 ||
-        Math.abs(provider.profile.location.coordinates.lat) > 90 ||
+    if (!provider.profile.location?.coordinates || 
+        isNaN(provider.profile.location.coordinates.lat) || 
+        isNaN(provider.profile.location.coordinates.lng) || 
+        provider.profile.location.coordinates.lat === 0 || 
+        provider.profile.location.coordinates.lng === 0 || 
+        Math.abs(provider.profile.location.coordinates.lat) > 90 || 
         Math.abs(provider.profile.location.coordinates.lng) > 180) {
-      console.log(`[assignProvider] Provider ${providerId} has invalid or missing coordinates: ${JSON.stringify(provider.profile.location?.coordinates)}`);
-      if (bookingCity && provider.profile.location?.details?.city &&
+      console.log(`[assignProvider] Provider ${providerId} excluded: Invalid or missing coordinates: ${JSON.stringify(provider.profile.location?.coordinates)}`);
+      if (bookingCity && provider.profile.location?.details?.city && 
           bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
         console.log(`[assignProvider] Provider ${providerId} allowed via city fallback: ${bookingCity}`);
       } else {
@@ -1461,76 +1569,32 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     } else if (bookingCoords && bookingCoords.lat && bookingCoords.lng) {
       const maxDistance = 50 * 1000;
       const cacheKey = `${bookingCoords.lat},${bookingCoords.lng}:${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`;
+      let distance;
 
       if (distanceCache.has(cacheKey)) {
-        const distance = distanceCache.get(cacheKey);
+        distance = distanceCache.get(cacheKey);
         console.log(`[assignProvider] Using cached distance for provider ${providerId}: ${distance}m`);
-        if (distance > maxDistance) {
-          console.log(`[assignProvider] Provider ${providerId} excluded: Distance ${distance}m exceeds ${maxDistance}m`);
-          return res.status(400).json({ message: 'Provider is too far from booking location' });
-        }
       } else {
-        const retry = async (fn, retries = 3, delay = 1000) => {
-          for (let i = 0; i < retries; i++) {
-            try {
-              return await fn();
-            } catch (error) {
-              if (i === retries - 1) throw error;
-              console.log(`[assignProvider] Retrying API call (${i + 1}/${retries}) for provider ${providerId}`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-          }
-        };
-
         try {
-          const response = await retry(() =>
-            axios.get(
-              `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${bookingCoords.lat},${bookingCoords.lng}&destinations=${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-            )
+          distance = await getDistanceMatrix(
+            `${bookingCoords.lat},${bookingCoords.lng}`,
+            `${provider.profile.location.coordinates.lat},${provider.profile.location.coordinates.lng}`
           );
-          console.log('[assignProvider] Distance Matrix response:', {
-            status: response.data.status,
-            elementStatus: response.data.rows?.[0]?.elements?.[0]?.status || 'N/A',
-            error_message: response.data.error_message || 'None'
-          });
-
-          if (response.data.status === 'OK' && response.data.rows?.[0]?.elements?.[0]?.status === 'OK') {
-            const distance = response.data.rows[0].elements[0].distance.value;
-            distanceCache.set(cacheKey, distance);
-            if (distance > maxDistance) {
-              console.log(`[assignProvider] Provider ${providerId} excluded: Distance ${distance}m exceeds ${maxDistance}m`);
-              return res.status(400).json({ message: 'Provider is too far from booking location' });
-            }
-            console.log(`[assignProvider] Provider ${providerId} included: Distance ${distance}m`);
-          } else {
-            const errorMessage = response.data.error_message || 'Unknown error';
-            const elementStatus = response.data.rows?.[0]?.elements?.[0]?.status || 'N/A';
-            console.log(`[assignProvider] Distance Matrix failed for provider ${providerId}: status=${response.data.status}, elementStatus=${elementStatus}, error=${errorMessage}`);
-            if (response.data.status === 'REQUEST_DENIED') {
-              console.error('[assignProvider] Distance Matrix failed: REQUEST_DENIED, check API key configuration');
-              return res.status(500).json({ message: 'Distance calculation failed: Invalid or disabled Google Maps API key' });
-            } else if (response.data.status === 'OVER_QUERY_LIMIT') {
-              console.log(`[assignProvider] API quota exceeded for provider ${providerId}`);
-            } else if (elementStatus === 'NOT_FOUND' || elementStatus === 'ZERO_RESULTS') {
-              console.log(`[assignProvider] Invalid or unroutable coordinates for provider ${providerId}`);
-            }
-            if (bookingCity && provider.profile.location?.details?.city &&
-                bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
-              console.log(`[assignProvider] Provider ${providerId} allowed via city fallback: ${bookingCity}`);
-            } else {
-              return res.status(400).json({ message: `Could not calculate distance to provider: ${errorMessage}` });
-            }
-          }
+          console.log(`[assignProvider] Provider ${providerId} included: Distance ${distance}m`);
         } catch (error) {
-          const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-          console.error(`[assignProvider] Distance Matrix error for provider ${providerId}: ${errorDetails}`);
-          if (bookingCity && provider.profile.location?.details?.city &&
+          console.error(`[assignProvider] Distance Matrix failed for provider ${providerId}: ${error.message}`);
+          if (bookingCity && provider.profile.location?.details?.city && 
               bookingCity.toLowerCase().trim() === provider.profile.location.details.city.toLowerCase().trim()) {
             console.log(`[assignProvider] Provider ${providerId} allowed via city fallback: ${bookingCity}`);
           } else {
-            return res.status(500).json({ message: `Failed to calculate distance to provider: ${errorDetails}` });
+            return res.status(400).json({ message: `Could not calculate distance to provider: ${error.message}` });
           }
         }
+      }
+
+      if (distance && distance > maxDistance) {
+        console.log(`[assignProvider] Provider ${providerId} excluded: Distance ${distance}m exceeds ${maxDistance}m`);
+        return res.status(400).json({ message: 'Provider is too far from booking location' });
       }
     }
 
@@ -1588,14 +1652,6 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error while assigning provider' });
   }
 });
-
-
-
-
-
-
-
-
 
 
 
