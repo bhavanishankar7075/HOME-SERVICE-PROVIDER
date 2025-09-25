@@ -39,7 +39,7 @@ const calculateRevenue = async () => {
   return result[0]?.total || 0;
 };
 
-const createBooking = asyncHandler(async (req, res) => {
+/* const createBooking = asyncHandler(async (req, res) => {
   const { error } = bookingValidationSchema.validate(req.body);
   if (error) {
     res.status(400);
@@ -136,7 +136,119 @@ const createBooking = asyncHandler(async (req, res) => {
   }
 
   res.status(201).json(booking);
+}); */
+
+
+
+
+
+
+const createBooking = asyncHandler(async (req, res) => {
+  const { error } = bookingValidationSchema.validate(req.body);
+  if (error) {
+    res.status(400);
+    throw new Error(error.details[0].message);
+  }
+
+  const { serviceId, scheduledTime, location, paymentMethod, isImmediate } = req.body;
+  console.log(`[createBooking] Payload:`, { serviceId, scheduledTime, location, paymentMethod, isImmediate });
+
+  const service = await Service.findById(serviceId);
+  if (!service) {
+    res.status(404);
+    throw new Error('Service not found');
+  }
+
+  const customer = await User.findById(req.user._id);
+  if (!customer) {
+    res.status(404);
+    throw new Error('Customer profile not found');
+  }
+
+  if (!customer.name || !customer.email || !customer.phone || !customer.profile) {
+    res.status(400);
+    throw new Error('Please complete your profile (name, email, phone, and profile details) before booking');
+  }
+
+  if (!isImmediate) {
+    const bookingDate = new Date(scheduledTime);
+    const dateStr = bookingDate.toISOString().split('T')[0];
+    const timeStr = bookingDate.toISOString().slice(11, 16); // UTC "HH:mm"
+    const availableTimes = service.availableSlots.get(dateStr) || [];
+    console.log(`[createBooking] dateStr: ${dateStr}, timeStr: ${timeStr}, availableTimes:`, availableTimes);
+    if (!availableTimes.includes(timeStr)) {
+      res.status(400);
+      throw new Error(`Selected time ${timeStr} is not available for this service on ${dateStr}`);
+    }
+    service.availableSlots.set(dateStr, availableTimes.filter(time => time !== timeStr));
+    if (service.availableSlots.get(dateStr).length === 0) {
+      service.availableSlots.delete(dateStr);
+    }
+    await service.save();
+  }
+
+  const booking = await Booking.create({
+    customer: req.user._id,
+    service: serviceId,
+    scheduledTime,
+    location,
+    totalPrice: service.price,
+    customerDetails: {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      profileImage: customer.profile?.image || '/images/default-user.png',
+    },
+    paymentDetails: {
+      method: paymentMethod,
+      status: 'pending',
+    },
+    status: 'pending',
+  });
+
+  await User.updateOne(
+    { _id: req.user._id },
+    {
+      $push: {
+        'profile.bookedServices': serviceId,
+        'profile.appointments': {
+          bookingId: booking._id,
+          serviceId: serviceId,
+          scheduledTime,
+          status: 'pending'
+        }
+      }
+    }
+  );
+
+  console.log('Booking Created:', {
+    bookingId: booking._id,
+    customerId: booking.customer,
+    customerName: customer.name,
+    profileExists: !!customer.profile,
+    profileImage: customer.profile?.image || '/images/default-user.png',
+  });
+
+  if (global.io) {
+    global.io.to(req.user._id.toString()).emit('bookingStatusUpdate', {
+      bookingId: booking._id,
+      message: `Your booking for ${service.name} is confirmed and is pending provider assignment`,
+      newStatus: 'pending',
+    });
+    global.io.to('admin_room').emit('newPendingBooking', {
+      message: `New booking #${booking._id.toString().slice(-6)} needs a provider`,
+      bookingDetails: booking,
+    });
+  }
+
+  res.status(201).json(booking);
 });
+
+
+
+
+
+
 
 
 //main and main
