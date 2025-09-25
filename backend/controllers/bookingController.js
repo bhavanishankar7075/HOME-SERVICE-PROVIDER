@@ -170,22 +170,62 @@ const createBooking = asyncHandler(async (req, res) => {
     throw new Error('Please complete your profile (name, email, phone, and profile details) before booking');
   }
 
-  if (!isImmediate) {
-    const bookingDate = new Date(scheduledTime);
+ if (!isImmediate) {
+    // --- Start of Changed Block ---
+
+    // The scheduledTime from req.body is already a UTC ISO string
+    // like "2025-09-26T03:30:00.000Z"
+    const bookingDate = new Date(scheduledTime); 
+
+    // 1. Get the date part in 'YYYY-MM-DD' format, ensuring it's in UTC.
     const dateStr = bookingDate.toISOString().split('T')[0];
-    const timeStr = bookingDate.toISOString().slice(11, 16); // UTC "HH:mm"
+
+    // 2. IMPORTANT: Extract the time from the ORIGINAL request body, NOT the new Date object.
+    // The req.body.scheduledTime contains the original time info before conversion.
+    // This assumes the frontend sends the time like '09:00'.
+    // Let's adjust the frontend logic slightly to pass this. Or, a better way is
+    // to pass the selected time slot directly.
+    
+    // For now, let's assume you pass 'time' in the body.
+    // If not, we'll adjust the frontend.
+    // Let's modify the frontend to send the chosen time slot.
+    
+    // A better approach in the backend is to find the slot that matches.
+    // Let's stick to fixing the backend logic first.
+    // The frontend sends `new Date(date + 'T' + time).toISOString()`.
+    // The backend receives it. The `time` part is what you need.
+    // It's better to send the selected time slot explicitly.
+
+    // Let's assume you modify the frontend payload to include `timeSlot`.
+    const { timeSlot } = req.body; // e.g., "09:00"
+
     const availableTimes = service.availableSlots.get(dateStr) || [];
-    console.log(`[createBooking] dateStr: ${dateStr}, timeStr: ${timeStr}, availableTimes:`, availableTimes);
-    if (!availableTimes.includes(timeStr)) {
+    
+    console.log(`[createBooking] Checking availability...`);
+    console.log(`Date String: ${dateStr}`);
+    console.log(`Time Slot to check: ${timeSlot}`);
+    console.log(`Available slots for this date:`, availableTimes);
+
+    if (!availableTimes.includes(timeSlot)) {
       res.status(400);
-      throw new Error(`Selected time ${timeStr} is not available for this service on ${dateStr}`);
+      throw new Error(`The selected time slot ${timeSlot} is no longer available for ${dateStr}. Please select another time.`);
     }
-    service.availableSlots.set(dateStr, availableTimes.filter(time => time !== timeStr));
+
+    // Remove the booked slot
+    service.availableSlots.set(dateStr, availableTimes.filter(time => time !== timeSlot));
     if (service.availableSlots.get(dateStr).length === 0) {
       service.availableSlots.delete(dateStr);
     }
+    // --- End of Changed Block ---
+
     await service.save();
   }
+
+  // ... (rest of the function remains the same)
+  // ... (creating booking, updating user, emitting socket events)
+
+  res.status(201).json(booking);
+});
 
   const booking = await Booking.create({
     customer: req.user._id,

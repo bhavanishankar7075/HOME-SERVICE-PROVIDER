@@ -226,6 +226,7 @@ const Services = () => {
         scheduledTime,
         location: scheduleData.location,
         paymentMethod,
+         timeSlot: scheduleData.time,
       };
       const bookingRes = await axios.post(`${API_URL}/api/bookings`, bookingPayload, {
         headers: { Authorization: `Bearer ${token}` }
