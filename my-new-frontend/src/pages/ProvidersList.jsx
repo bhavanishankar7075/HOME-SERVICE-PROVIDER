@@ -47,12 +47,16 @@ const ProvidersList = () => {
       setLoading(true);
       const selectedLocation = location.state?.location || reduxLocation;
 
+      // DEBUG: Log critical inputs
       console.log('[ProvidersList] Selected location:', selectedLocation);
       console.log('[ProvidersList] Skills filter:', skillsFilter);
+      console.log('[ProvidersList] User:', user ? { id: user.id, role: user.role } : 'No user');
+      console.log('[ProvidersList] Token present:', !!token);
 
       if (!selectedLocation) {
         setError('Please select a location to view providers.');
         setLoading(false);
+        navigate('/location', { state: { error: 'Location is required to view providers' } }); // Redirect to location selection
         return;
       }
       if (!token || !user) {
@@ -75,6 +79,9 @@ const ProvidersList = () => {
         params.services = skillsFilter;
       }
 
+      // DEBUG: Log full request details
+      console.log('[ProvidersList] Sending request:', { endpoint, params });
+
       try {
         const response = await axios.get(endpoint, {
           headers: { Authorization: `Bearer ${token}` },
@@ -84,6 +91,8 @@ const ProvidersList = () => {
         setError('');
         console.log('[ProvidersList] Providers fetched:', response.data.length);
       } catch (err) {
+        // DEBUG: Log full error response
+        console.error('[ProvidersList] Full error response:', err.response);
         console.error('[ProvidersList] Error fetching providers:', err.response?.data || err.message);
 
         if (err.response?.status === 401) {
@@ -91,7 +100,7 @@ const ProvidersList = () => {
           dispatch(clearUser());
           navigate('/login', { replace: true });
         } else if (err.response?.status === 400) {
-          setError('Invalid location. Please select a valid location.');
+          setError('Invalid location or services filter. Please try a different location or filter.');
           setProviders([]);
         } else if (err.response?.status === 404) {
           setError('No active providers found for this location.');
