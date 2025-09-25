@@ -52,9 +52,9 @@ const createService = [
     }
 
     const { name, description, price, category, offer, deal } = req.body;
-    const image = req.files?.image ? `/Uploads/services/${req.files.image[0].filename}` : '';
+    const image = req.files?.image ? `/uploads/services/${req.files.image[0].filename}` : '';
     const additionalImages = req.files?.additionalImages
-      ? req.files.additionalImages.map(file => `/Uploads/services/${file.filename}`)
+      ? req.files.additionalImages.map(file => `/uploads/services/${file.filename}`)
       : [];
 
     const service = await Service.create({
@@ -149,9 +149,9 @@ const updateService = [
       return res.status(403).json({ msg: 'Not authorized to update this service' });
     }
 
-    const newImage = req.files?.image ? `/Uploads/services/${req.files.image[0].filename}` : undefined;
+    const newImage = req.files?.image ? `/uploads/services/${req.files.image[0].filename}` : undefined;
     const additionalImages = req.files?.additionalImages
-      ? req.files.additionalImages.map(file => `/Uploads/services/${file.filename}`)
+      ? req.files.additionalImages.map(file => `/uploads/services/${file.filename}`)
       : [];
 
     if ((newImage !== undefined || formDataObj.image === '') && service.image) {
