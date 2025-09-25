@@ -78,6 +78,13 @@ app.use('/api/chat', chatingRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'API is running', 
+    message: 'Welcome to the Home-Service-Provider API!' 
+  });
+});
+
 // Catch-all for undefined routes
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found', requestedUrl: req.url });
