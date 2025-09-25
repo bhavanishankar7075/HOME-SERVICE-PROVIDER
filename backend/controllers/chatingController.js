@@ -358,12 +358,6 @@ const clearChatHistory = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Chat history cleared successfully.' });
 });
 
-
-
-
-
-
-
 module.exports = {
     getOrCreateConversation,
     postMessage,

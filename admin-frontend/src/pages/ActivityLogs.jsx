@@ -52,16 +52,6 @@ const ActivityLogs = () => {
     }
   };
 
- /*  useEffect(() => {
-    if (!token) {
-      setMessage({ open: true, text: 'No authentication token found. Please log in.', severity: 'error' });
-      navigate('/');
-      return;
-    }
-    fetchLogs(); */
-
-
-
 
   useEffect(() => {
         console.log('ActivityLogs: Mounting, auth state:', { token, isAuthenticated, user });

@@ -485,9 +485,6 @@ exports.updateSettings = asyncHandler(async (req, res) => {
   }
 }); */
 
-
-
-
 /* 
 exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
@@ -806,25 +803,6 @@ exports.assignProvider = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error while assigning provider' });
   }
 }); */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 exports.getActiveProviders = asyncHandler(async (req, res) => {
   try {
@@ -1298,47 +1276,6 @@ exports.cancelProviderSubscription = asyncHandler(async (req, res) => {
     res.status(500).json({ message: `Failed to cancel provider subscription: ${error.message}` });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 exports.getMessages = asyncHandler(async (req, res) => {
