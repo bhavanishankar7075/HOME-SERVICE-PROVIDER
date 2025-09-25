@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 const storage = multer.diskStorage({
-  destination: './Uploads/',
+  destination: './uploads/',
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   },
@@ -174,10 +174,10 @@ const updateProfile = [
       updateData.profile.skills = req.body.skills.split(',').map(skill => skill.trim());
     }
     if (req.file) {
-      updateData.profile.image = `/Uploads/${req.file.filename}`;
+      updateData.profile.image = `/uploads/${req.file.filename}`;
     }
 
-    console.log('[updateProfile] Updating with data:', updateData);
+    console.log('[updateProfile] updating with data:', updateData);
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
