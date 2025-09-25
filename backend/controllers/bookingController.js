@@ -11,6 +11,28 @@ const axios = require('axios'); // Ensure axios is imported
 // In-memory cache for Distance Matrix results (consider Redis for persistence)
 const distanceCache = new Map();
 
+/* const bookingValidationSchema = Joi.object({
+  serviceId: Joi.string().required().messages({
+    'string.empty': 'Service ID is required',
+    'any.required': 'Service ID is required',
+  }),
+  scheduledTime: Joi.date().required().messages({
+    'date.base': 'Scheduled time must be a valid date',
+    'any.required': 'Scheduled time is required',
+  }),
+  location: Joi.string().required().messages({
+    'string.empty': 'Location is required',
+    'any.required': 'Location is required',
+  }),
+  paymentMethod: Joi.string().valid('COD', 'Stripe').required().messages({
+    'any.only': 'Payment method must be either COD or Stripe',
+    'any.required': 'Payment method is required',
+  }),
+  isImmediate: Joi.boolean().optional(),
+}); */
+
+
+
 const bookingValidationSchema = Joi.object({
   serviceId: Joi.string().required().messages({
     'string.empty': 'Service ID is required',
@@ -29,7 +51,21 @@ const bookingValidationSchema = Joi.object({
     'any.required': 'Payment method is required',
   }),
   isImmediate: Joi.boolean().optional(),
+
+  // --- FIX IS HERE ---
+  // We've added timeSlot to the list of allowed fields.
+  timeSlot: Joi.string()
+    .pattern(new RegExp('^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')) // Validates HH:mm format
+    .optional() // Makes the field optional
+    .messages({
+      'string.pattern.base': 'Time slot must be in a valid HH:mm format (e.g., 09:00 or 14:30)',
+    }),
 });
+
+
+
+
+
 
 const calculateRevenue = async () => {
   const result = await Booking.aggregate([
