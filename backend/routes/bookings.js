@@ -21,7 +21,7 @@ const {
 } = require('../controllers/bookingController');
 
 // Routes (relative paths)
-router.post('/', authMiddleware, createBooking);
+router.post('/', authMiddleware(), createBooking);
 router.get('/services', getServices);
 router.get('/my-bookings', authMiddleware(), getMyBookings);
 router.get('/previous-services', authMiddleware(['customer']), getCustomerPreviousServices);
