@@ -20,6 +20,8 @@ import {
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined } from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +53,7 @@ function Login() {
     }
     dispatch(setLoading(true));
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       const { token: responseToken, needsVerification: verificationRequired, message } = response.data;
 
       if (verificationRequired) {
@@ -59,7 +61,7 @@ function Login() {
         return;
       }
 
-      const profileRes = await axios.get('http://localhost:5000/api/users/profile', {
+      const profileRes = await axios.get(`${API_URL}/api/users/profile`, {
         headers: { Authorization: `Bearer ${responseToken}` },
       });
       const fullUserData = { ...profileRes.data };

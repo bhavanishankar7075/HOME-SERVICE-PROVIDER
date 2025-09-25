@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-import io from 'socket.io-client'; // <-- 1. Import Socket.IO
+import io from 'socket.io-client';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, CircularProgress, Alert, Avatar, ListItemAvatar } from '@mui/material';
 
-// --- 2. Initialize the socket connection ---
-const socket = io('http://localhost:5000');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const socket = io(API_URL);
 
 const CustomerMessages = () => {
   const { token, user } = useSelector((state) => state.auth);
@@ -22,7 +22,7 @@ const CustomerMessages = () => {
       }
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/users/messages', {
+        const response = await axios.get(`${API_URL}/api/users/messages`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(response.data);
@@ -37,9 +37,7 @@ const CustomerMessages = () => {
 
     fetchMessages();
 
-    // --- 3. Set up real-time listener for replies ---
     if (user) {
-      // Handler to update a message when a reply comes in
       const handleNewReply = (updatedMessage) => {
         setMessages((prevMessages) => 
           prevMessages.map(msg => 
@@ -48,10 +46,9 @@ const CustomerMessages = () => {
         );
       };
 
-      socket.emit('joinRoom', user._id); // Join personal room
-      socket.on('newAdminReply', handleNewReply); // Listen for replies
+      socket.emit('joinRoom', user._id);
+      socket.on('newAdminReply', handleNewReply);
 
-      // Clean up the listener when the component unmounts
       return () => {
         socket.off('newAdminReply', handleNewReply);
       };
@@ -86,7 +83,7 @@ const CustomerMessages = () => {
                   <ListItemAvatar>
                     <Avatar 
                       alt={msg.providerId?.name || 'P'} 
-                      src={msg.providerId?.profile?.image ? `http://localhost:5000${msg.providerId.profile.image}` : '/default-avatar.png'}
+                      src={msg.providerId?.profile?.image ? `${API_URL}${msg.providerId.profile.image}` : '/default-avatar.png'}
                     />
                   </ListItemAvatar>
                   <ListItemText
@@ -100,8 +97,6 @@ const CustomerMessages = () => {
                         <Typography component="p" variant="body2" sx={{ my: 1, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, border: '1px solid #e0e0e0' }}>
                           {msg.message}
                         </Typography>
-
-                        {/* --- 4. ADDED UI TO DISPLAY THE ADMIN'S REPLY --- */}
                         {msg.adminReply && msg.adminReply.text && (
                           <Box sx={{ mt: 2, p: 2, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #bbdefb' }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1565c0' }}>
@@ -112,8 +107,6 @@ const CustomerMessages = () => {
                             </Typography>
                           </Box>
                         )}
-                        {/* ------------------------------------------- */}
-
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                           <Typography component="span" variant="caption" color="text.secondary">
                             Sent: {new Date(msg.createdAt).toLocaleString()}

@@ -6,6 +6,8 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Payments = () => {
   const { token } = useSelector((state) => state.auth);
   const [payments, setPayments] = useState([]);
@@ -15,7 +17,7 @@ const Payments = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const socket = io('http://localhost:5000', {
+    const socket = io(API_URL, {
       withCredentials: true,
       extraHeaders: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
     });
@@ -23,7 +25,7 @@ const Payments = () => {
     const fetchPayments = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:5000/api/payments', {
+        const response = await axios.get(`${API_URL}/api/payments`, {
           headers: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
         });
         setPayments(response.data);
@@ -46,7 +48,7 @@ const Payments = () => {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      const response = await axios.put(`http://localhost:5000/api/payments/${id}/status`, { status }, {
+      const response = await axios.put(`${API_URL}/api/payments/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
       });
       setMessage({ open: true, text: 'Payment status updated successfully', severity: 'success' });
@@ -58,7 +60,7 @@ const Payments = () => {
 
   const handleRefund = async (id) => {
     try {
-      await axios.post(`http://localhost:5000/api/payments/${id}/refund`, {}, {
+      await axios.post(`${API_URL}/api/payments/${id}/refund`, {}, {
         headers: { Authorization: `Bearer ${token || localStorage.getItem('token')}` },
       });
       setMessage({ open: true, text: 'Payment refunded successfully', severity: 'success' });
@@ -83,7 +85,7 @@ const Payments = () => {
         variant="outlined"
         fullWidth
         sx={{ mb: 3 }}
-        value={search}
+        Value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
       {loading ? (

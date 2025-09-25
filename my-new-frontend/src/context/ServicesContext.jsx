@@ -3,7 +3,7 @@ import { useState, useEffect, createContext, useContext, useCallback } from "rea
 import io from "socket.io-client";
 
 // FIX: Use the same environment variable as your other components for consistency.
-const API_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export const ServicesContext = createContext();
 

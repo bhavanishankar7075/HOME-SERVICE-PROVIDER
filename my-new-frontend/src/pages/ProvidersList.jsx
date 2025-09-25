@@ -6,6 +6,8 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 import axios from 'axios';
 import { Modal, Box, Typography, TextField, Button, CircularProgress, Alert } from '@mui/material';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const modalStyle = {
   position: 'absolute',
   top: '50%',
@@ -67,7 +69,7 @@ const ProvidersList = () => {
         return;
       }
 
-      const endpoint = 'http://localhost:5000/api/admin/providers/active';
+      const endpoint = `${API_URL}/api/admin/providers/active`;
       const params = { location: selectedLocation };
       if (skillsFilter) {
         params.services = skillsFilter;
@@ -143,7 +145,7 @@ const ProvidersList = () => {
     setIsSending(true);
     setModalAlert({ type: '', message: '' });
     try {
-      await axios.post('http://localhost:5000/api/users/contact-admin', {
+      await axios.post(`${API_URL}/api/users/contact-admin`, {
         providerId: selectedProvider._id,
         providerName: selectedProvider.name,
         message: message,
@@ -237,7 +239,7 @@ const ProvidersList = () => {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={provider.profile?.image ? `http://localhost:5000${provider.profile.image}` : `https://placehold.co/100/E2E8F0/4A5568?text=${provider.name?.charAt(0) || 'U'}`}
+                  src={provider.profile?.image ? `${API_URL}${provider.profile.image}` : `https://placehold.co/100/E2E8F0/4A5568?text=${provider.name?.charAt(0) || 'U'}`}
                   alt={`${provider.name || 'Provider'}'s profile`}
                   className="object-cover w-12 h-12 border-2 border-gray-200 rounded-full"
                   onError={(e) => {

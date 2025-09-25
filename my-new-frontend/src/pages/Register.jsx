@@ -24,8 +24,9 @@ import {
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined, PersonOutline, PhoneOutlined, WorkOutline } from '@mui/icons-material';
 import registerImg from '../assets/register-image.png';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function Register() {
-  // --- All your logic remains unchanged ---
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -66,7 +67,7 @@ function Register() {
     }
     dispatch(setLoading(true));
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
+      const res = await axios.post(`${API_URL}/api/auth/register`, {
         name,
         email,
         phone,
@@ -101,19 +102,17 @@ function Register() {
   if (user) {
     return null;
   }
-  
-  // --- DESIGN FIXES ARE HERE ---
+
   return (
     <Box
       sx={{
-        // **FIX 1**: Use `height` instead of `minHeight` to prevent page overflow
-        height: 'calc(93vh - 60px)', // Adjust 64px to your navbar's height
+        height: 'calc(93vh - 60px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2, // Padding to prevent touching screen edges
+        p: 2,
         backgroundColor: (theme) => theme.palette.grey[100],
-        mt:7
+        mt: 7
       }}
     >
       <Container maxWidth="lg" sx={{ height: '100%', p: '0 !important' }}>
@@ -121,14 +120,13 @@ function Register() {
           elevation={6}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { md: '6fr 7fr' }, // Adjusted ratio for better balance
+            gridTemplateColumns: { md: '6fr 7fr' },
             borderRadius: 4,
             overflow: 'hidden',
-            height: '100%', // Make Paper fill the container height
+            height: '100%',
             width: '100%',
           }}
         >
-          {/* Left Side: Image */}
           <Box
             sx={{
               display: { xs: 'none', md: 'block' },
@@ -137,15 +135,12 @@ function Register() {
               backgroundPosition: 'center',
             }}
           />
-
-          {/* Right Side: Form */}
           <Box
             sx={{
               p: { xs: 2.5, sm: 3.5 },
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              // **FIX 2**: Add vertical scroll *only to the form* if content overflows
               overflowY: 'auto',
             }}
           >
@@ -166,7 +161,6 @@ function Register() {
               )}
 
               <Box component="form" noValidate onSubmit={handleSubmit}>
-                {/* **FIX 3**: Reduced spacing and made fields dense */}
                 <Stack spacing={1.5}>
                   <TextField
                     margin="dense" required fullWidth label="Full Name" name="name"

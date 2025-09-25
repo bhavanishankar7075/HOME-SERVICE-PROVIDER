@@ -5,6 +5,8 @@ import axios from 'axios';
 import { setServices, setLoading, setError } from '../redux/services.slice';
 import { selectAuth } from '../redux/authSlice';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const useFetchServices = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, token } = useSelector(selectAuth);
@@ -21,7 +23,7 @@ const useFetchServices = () => {
       dispatch(setLoading(true));
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get('http://localhost:5000/api/services', { headers });
+        const response = await axios.get(`${API_URL}/api/services`, { headers });
         console.log('Fetch services response (raw):', response.status, response.data);
         const formattedData = response.data.map(service => ({
           ...service,
@@ -55,10 +57,10 @@ const useFetchServices = () => {
 
   const { items: services, loading, error } = useSelector((state) => {
     const servicesState = state.services || { items: [], loading: false, error: null };
-    console.log('Selector services state:', servicesState); // Log the state being selected
+    console.log('Selector services state:', servicesState);
     return servicesState;
   });
-  console.log('Current services state:', services); // Log the destructured services
+  console.log('Current services state:', services);
 
   return { services, loading, error };
 };

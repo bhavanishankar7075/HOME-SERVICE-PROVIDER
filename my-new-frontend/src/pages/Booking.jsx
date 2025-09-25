@@ -5,6 +5,8 @@ import { Box, Typography, Button, TextField, Alert } from '@mui/material';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Booking = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const Booking = () => {
   useEffect(() => {
     const fetchService = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/services/${serviceId}`);
+        const response = await axios.get(`${API_URL}/api/services/${serviceId}`);
         setService(response.data);
       } catch (err) {
         setError('Service not found.');
@@ -27,7 +29,7 @@ const Booking = () => {
     };
     fetchService();
 
-    const socket = io('http://localhost:5000');
+    const socket = io(API_URL);
     socket.on('booking_update', (data) => {
       if (data.bookingId === bookingId) setStatus(data.status);
     });
@@ -41,7 +43,7 @@ const Booking = () => {
       return;
     }
     try {
-      const response = await axios.post('http://localhost:5000/api/bookings', {
+      const response = await axios.post(`${API_URL}/api/bookings`, {
         serviceId,
         userId: user._id,
         date,
@@ -59,7 +61,7 @@ const Booking = () => {
   const handleCancelBooking = async () => {
     if (bookingId) {
       try {
-        await axios.delete(`http://localhost:5000/api/bookings/${bookingId}`);
+        await axios.delete(`${API_URL}/api/bookings/${bookingId}`);
         setStatus('cancelled');
         setBookingId(null);
         setError(null);

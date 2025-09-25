@@ -15,19 +15,18 @@ import {
   Paper,
   InputAdornment,
   Container,
-  Snackbar, // <-- Import Snackbar
+  Snackbar,
 } from '@mui/material';
 import { EmailOutlined, LockOutlined } from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function VerifyOTP() {
-  // --- All original logic and state is preserved ---
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(60);
-
-  // --- State for the new Snackbar notification ---
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
   const dispatch = useDispatch();
@@ -72,7 +71,7 @@ function VerifyOTP() {
     }
     dispatch(setLoading(true));
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', { email, otp });
+      const response = await axios.post(`${API_URL}/api/auth/verify-otp`, { email, otp });
       const { token: responseToken, user: userData } = response.data;
       if (!userData || !responseToken) {
         throw new Error('Invalid response format: user or token missing');
@@ -97,10 +96,9 @@ function VerifyOTP() {
     }
     dispatch(setLoading(true));
     try {
-      await axios.post('http://localhost:5000/api/auth/resend-otp', { email });
+      await axios.post(`${API_URL}/api/auth/resend-otp`, { email });
       setResendDisabled(true);
       setResendCountdown(60);
-      // **MODERN POPUP**: Replace alert with Snackbar
       setSnackbar({ open: true, message: 'A new OTP has been sent to your email.' });
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
@@ -109,7 +107,7 @@ function VerifyOTP() {
       dispatch(setLoading(false));
     }
   };
-  
+
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -126,16 +124,15 @@ function VerifyOTP() {
   return (
     <Box
       sx={{
-        height: 'calc(90vh - 64px)', // Consistent fixed height
+        height: 'calc(90vh - 64px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
         backgroundColor: (theme) => theme.palette.grey[100],
-        mt:8
+        mt: 8
       }}
     >
-      {/* Snackbar component for modern notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -209,20 +206,18 @@ function VerifyOTP() {
                 >
                   {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Verify OTP'}
                 </Button>
-
-
-              <Typography
-                variant="caption"
+                <Typography
+                  variant="caption"
                   textAlign="center"
                   sx={{
-                    mt: 2, // Adds margin on top for spacing
-                    color: 'error.main', // Uses the theme's main error color (typically red)
+                    mt: 2,
+                    color: 'error.main',
                     fontWeight: 'bold',
-                    display: 'block' // Ensures it takes up the full width for centering
-                    }}
-                  >
+                    display: 'block'
+                  }}
+                >
                   NOTE: Please check your spam folder for the OTP email.
-              </Typography>
+                </Typography>
                 <Grid container justifyContent="space-between" alignItems="center">
                   <Grid item>
                     <Button
@@ -250,7 +245,6 @@ function VerifyOTP() {
 }
 
 export default VerifyOTP;
-
 
 
 

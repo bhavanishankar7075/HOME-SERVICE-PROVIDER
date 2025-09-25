@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux'; // <-- IMPORT useSelector
+import { useSelector } from 'react-redux';
 import Carousel from 'react-material-ui-carousel';
 import { ServicesContext } from '../context/ServicesContext';
 import {
@@ -27,9 +26,6 @@ import partener6 from '../assets/partener-6.png';
 import plumbingImg from "../assets/plumbing-image.jpg";
 import paintingImg from '../assets/paintaing.png';
 
-// All your sub-components (HeroSection, ServiceMarquee, etc.) remain unchanged.
-// Paste them here from your original file. For brevity, I'll start from the main Home component.
-
 const partners = [
   { name: 'Urban Company', logo: partener1 },
   { name: 'Housejoy', logo: 'https://d2dgt4tr79mk87.cloudfront.net/manufacturer/Agri.png' },
@@ -39,7 +35,7 @@ const partners = [
   { name: 'Joboy', logo: partener6 },
 ];
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const announcements = [
   'Limited Time: 25% off!',
@@ -475,7 +471,6 @@ const CtaSection = ({ handleNavigation }) => (
   </Box>
 );
 
-
 const Home = () => {
   const navigate = useNavigate();
   const { services, loading, message } = useContext(ServicesContext);
@@ -486,15 +481,11 @@ const Home = () => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  // --- FIX STARTS HERE ---
-  // Get the token from the Redux store, the single source of truth.
   const { token } = useSelector((state) => state.auth);
-  // --- FIX ENDS HERE ---
 
   const fetchFeedbacks = useCallback(async () => {
-    // This check is still useful for when the component mounts, but now it uses the reliable Redux token.
     if (!token) {
-      return; // Simply do nothing if there's no token. ProtectedRoute will handle the redirect.
+      return;
     }
     setFeedbackLoading(true);
     try {
@@ -505,13 +496,11 @@ const Home = () => {
       setErrorMessage(null);
     } catch (error) {
       console.error('Error fetching feedbacks:', error.response?.data?.message || error.message);
-      // Let ProtectedRoute handle the redirect for 401 errors.
-      // We can just show an error message.
       setErrorMessage('Could not load customer feedback.');
     } finally {
       setFeedbackLoading(false);
     }
-  }, [token]); // Dependency is now only on the Redux token
+  }, [token]);
 
   useEffect(() => {
     const fetchLiveStats = async () => {
@@ -523,7 +512,7 @@ const Home = () => {
       }
     };
     fetchLiveStats();
-    fetchFeedbacks(); // Fetch feedbacks when the component loads
+    fetchFeedbacks();
     const socket = io(API_URL);
     socket.on('statsUpdated', fetchLiveStats);
     socket.on('feedbacksUpdated', fetchFeedbacks);
@@ -532,7 +521,7 @@ const Home = () => {
 
   const handleNavigation = (path) => navigate(path);
   const filteredServices = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory ? s.category === selectedCategory : true));
-  const getImageUrl = (image) => (image?.startsWith('http') ? image : `${API_URL}${image || '/uploads/default.jpg'}`);
+  const getImageUrl = (image) => (image?.startsWith('http') ? image : `${API_URL}${image || '/Uploads/default.jpg'}`);
 
   if (loading || feedbackLoading) {
     return (
@@ -588,7 +577,6 @@ const Home = () => {
 };
 
 export default Home;
-
 
 
 
