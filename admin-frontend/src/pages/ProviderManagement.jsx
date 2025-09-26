@@ -370,7 +370,7 @@ const ProviderManagement = () => {
                     <TableRow key={user._id} hover>
                       <TableCell component="th" scope="row">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar src={user.profile?.image || ''} sx={{ mr: 2 }}>{user.name.charAt(0)}</Avatar> // <-- UPDATED
+                          <Avatar src={user.profile?.image || ''} sx={{ mr: 2 }}>{user.name.charAt(0)}</Avatar> 
                           <Typography variant="body1" fontWeight="medium">{user.name}</Typography>
                         </Box>
                       </TableCell>
