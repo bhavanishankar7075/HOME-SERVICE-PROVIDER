@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { logout } from '../store/authSlice';
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL, { autoConnect: false });
@@ -325,13 +326,9 @@ const SubscriptionDashboard = () => {
     },
   ];
 
-  if (loading && !subscriptions.length) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+ if (loading && !subscriptions.length) {
+  return <AdminLoadingScreen message="Loading Subscriptions..." />;
+}
 
   return (
     <Box sx={{ p: 4, maxWidth: '1200px', mx: 'auto', bgcolor: '#f4f6f8', minHeight: '100vh' }}>

@@ -10,6 +10,7 @@ import {
   Toolbar, FormControl, InputLabel, Select, MenuItem, TextField as SearchField, Tooltip
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Edit as EditIcon, Delete as DeleteIcon, ArrowBack } from '@mui/icons-material';
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -247,9 +248,11 @@ function PlansPage() {
       </Toolbar>
 
       {loading ? (
-        <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
-      ) : error ? (
-        <Alert severity="error">{error}</Alert>
+  <AdminLoadingScreen message="Loading Subscription Plans..." />
+) : error ? (
+  <Box sx={{ mt: '70px', p: 2 }}>
+    <Alert severity="error">{error}</Alert>
+  </Box>
       ) : (
         <>
           {/* Plans Section */}

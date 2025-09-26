@@ -9,6 +9,7 @@ import { CheckCircle as CheckCircleIcon, Star as StarIcon, Work as WorkIcon } fr
 import { setUser } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
+import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL, { autoConnect: false });
@@ -93,10 +94,9 @@ function PricingPage() {
     }
   };
 
-  if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
-  }
-
+ if (loading) {
+  return <LoadingScreen title="Loading Plans" message="Please wait while we fetch our latest pricing..." />;
+}
   return (
     <Box sx={{ py: 9, bgcolor: '#f4f6f8' }}>
       <Container maxWidth="lg">

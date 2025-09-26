@@ -18,7 +18,7 @@ import { logout } from '../store/authSlice';
 import '../styles/AdminDashboard.css';
 import { Pie, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -426,7 +426,7 @@ const AdminDashboard = () => {
           </Box>
         </Box>
 
-        {loading ? <CircularProgress sx={{ display: 'block', margin: 'auto' }} /> :
+       {loading ? <AdminLoadingScreen message="Loading Dashboard..." />:
           showSettings ? (
             <Paper sx={{ p: 3, borderRadius: 2 }}>
               <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => setShowSettings(false)} sx={{ mb: 2 }}>Back to Dashboard</Button>

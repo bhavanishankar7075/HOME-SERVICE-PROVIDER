@@ -9,7 +9,7 @@ import {
   IconButton, Tooltip, TextField, Modal, Button, Checkbox, Avatar, Chip,
 } from '@mui/material';
 import { MarkEmailRead as MarkReadIcon, Delete as DeleteIcon, Reply as ReplyIcon, ArrowBack } from '@mui/icons-material';
-
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL);
 
@@ -181,9 +181,9 @@ const AdminMessages = () => {
     }
   };
 
-  if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
-  }
+ if (loading) {
+  return <AdminLoadingScreen message="Loading Messages..." />;
+}
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1200, margin: 'auto' }}>

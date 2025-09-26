@@ -60,7 +60,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import axios from "axios";
-
+import LoadingScreen from "../components/LoadingScreen";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = STRIPE_PUBLISHABLE_KEY
@@ -284,7 +284,7 @@ const ServiceDetails = () => {
     }
   };
 
-  if (servicesLoading || !service) {
+/*   if (servicesLoading || !service) {
     return (
       <Box
         sx={{
@@ -298,7 +298,14 @@ const ServiceDetails = () => {
         <CircularProgress size={60} sx={{ color: "#4F46E5" }} />
       </Box>
     );
-  }
+  } */
+
+
+
+
+    if (servicesLoading || !service) {
+  return <LoadingScreen title="Loading Service" message="Getting the details ready for you..." />;
+}
 
   return (
     <>

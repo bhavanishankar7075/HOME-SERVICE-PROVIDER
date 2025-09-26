@@ -22,6 +22,7 @@ import {
 import io from 'socket.io-client';
 import { setUser, clearUser, clearNotifications, setLocation } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
+import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
@@ -395,9 +396,29 @@ function UserDashboard() {
     .filter(b => b.feedback?.rating)
     .reduce((acc, b) => acc + b.feedback.rating, 0) / (allBookings.filter(b => b.feedback?.rating).length || 1);
 
-  if (loading && !profile) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
+/*   if (loading && !profile) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
   if (!user || !profile) return <Container sx={{ py: 8 }}><Typography sx={{ textAlign: 'center' }}>Please log in to view your dashboard.</Typography></Container>;
+ */
 
+
+  if (loading && !profile) {
+  return <LoadingScreen title="Loading Your Dashboard" message="Getting your profile and bookings ready..." />;
+}
+if (!user || !profile) {
+  return (
+    <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+      <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
+        <Typography variant="h6">Access Denied</Typography>
+        <Typography color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+          Please log in to view your dashboard.
+        </Typography>
+        <Button variant="contained" onClick={() => navigate('/login')}>
+          Go to Login
+        </Button>
+      </Paper>
+    </Container>
+  );
+}
   console.log('Rendering Tabs with notification count:', notifications.length);
 
   return (

@@ -53,6 +53,7 @@ import { logout } from '../store/authSlice';
 import axios from "./axiosInstance";
 import io from "socket.io-client";
 import "../styles/ProviderManagement.css";
+import AdminLoadingScreen from "../Components/AdminLoadingScreen";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
@@ -335,8 +336,7 @@ const ProviderManagement = () => {
         <TextField label="Filter by Skill" variant="outlined" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)} sx={{ flexGrow: 1, minWidth: '200px' }}/>
       </Paper>
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}><CircularProgress /></Box>
+      {loading ? (<AdminLoadingScreen message="Loading Providers..." /> 
       ) : (
         <>
           <Grid container spacing={3} sx={{ mb: 4 }}>

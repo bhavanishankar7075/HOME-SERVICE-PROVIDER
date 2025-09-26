@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
-
+import AdminLoadingScreen from './AdminLoadingScreen';
 const ProtectedRoute = ({ children }) => {
   const { token, isLoading } = useSelector((state) => state.auth);
   const location = useLocation();
@@ -16,9 +16,7 @@ const ProtectedRoute = ({ children }) => {
   if (isLoading) {
     console.log('ProtectedRoute: State is loading, showing loading indicator');
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
+      <AdminLoadingScreen message="Verifying Authentication..." />
     );
   }
 

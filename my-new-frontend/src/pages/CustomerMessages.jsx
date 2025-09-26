@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, CircularProgress, Alert, Avatar, ListItemAvatar } from '@mui/material';
-
+import LoadingScreen from '../components/LoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL);
 
@@ -56,11 +56,7 @@ const CustomerMessages = () => {
   }, [token, user]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+   return <LoadingScreen />;
   }
 
   return (

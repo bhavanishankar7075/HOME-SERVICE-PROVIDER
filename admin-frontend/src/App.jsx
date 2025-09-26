@@ -26,6 +26,7 @@ import SubscriptionDashboard from './pages/SubscriptionDashboard';
 import PlansPage from './pages/PlansPage';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import PageTransition from './Components/PageTransition'
+import AdminLoadingScreen from './Components/AdminLoadingScreen';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -173,12 +174,7 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate
-        loading={
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Loading application...</Typography>
-          </Box>
-        }
+        loading={<AdminLoadingScreen message="Initializing Admin Panel..." />}
         persistor={persistor}
         onBeforeLift={() => console.log('App.jsx: PersistGate hydrating...')}
       >

@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined } from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
+import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -75,14 +76,9 @@ function Login() {
     }
   };
 
-  if (isLoading && !user) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Logging in...</Typography>
-      </Box>
-    );
-  }
+ if (isLoading && !user) {
+  return <LoadingScreen title="Authenticating" message="Please wait while we log you in..." />;
+}
 
   if (user) {
     return null;

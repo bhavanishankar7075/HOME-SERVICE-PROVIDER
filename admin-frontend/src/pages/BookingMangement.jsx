@@ -12,7 +12,7 @@ import {
     Menu, CalendarToday, AccessTime, LocationOn, Person, Phone, Payment, Paid, ArrowBack
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
@@ -273,8 +273,9 @@ const BookingManagement = () => {
       });
   }, [bookings, filters]);
 
-  if (loading) return <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />;
-
+if (loading) {
+  return <AdminLoadingScreen message="Loading Bookings..." />;
+}
   return (
     <Box sx={{ p: 3 }}>
       <Toolbar />

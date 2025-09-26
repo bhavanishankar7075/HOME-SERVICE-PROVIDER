@@ -5,7 +5,7 @@ import { clearUser } from '../redux/authSlice';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import axios from 'axios';
 import { Modal, Box, Typography, TextField, Button, CircularProgress, Alert } from '@mui/material';
-
+import LoadingScreen from '../components/LoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const modalStyle = {
@@ -198,13 +198,17 @@ const ProvidersList = () => {
     navigate('/providers', { state: { location: reduxLocation }, replace: true });
   };
 
-  if (loading) {
+/*   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-xl text-gray-600">Loading Providers...</p>
       </div>
     );
-  }
+  } */
+
+    if (loading) {
+  return <LoadingScreen title="Finding Providers" message="Searching for the best professionals near you..." />;
+}
 
   return (
     <div className="min-h-screen p-4 bg-gray-100 -mt-[60px] sm:p-6 lg:p-8">

@@ -10,6 +10,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/CustomerFeedback.css';
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -311,10 +312,7 @@ const CustomerFeedbacks = () => {
           </Grid>
         </Grid>
       </Box>
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Box>
+      {loading ? (<AdminLoadingScreen message="Loading Customer Feedback..." /> 
       ) : (
         <TableContainer sx={{ maxWidth: '100%', overflowX: 'auto', mb: 3 }}>
           <Table className="feedbacks-table">

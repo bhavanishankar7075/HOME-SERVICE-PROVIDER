@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined, PersonOutline, PhoneOutlined, WorkOutline } from '@mui/icons-material';
 import registerImg from '../assets/register-image.png';
-
+import LoadingScreen from '../components/LoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function Register() {
@@ -88,7 +88,7 @@ function Register() {
     }
   };
 
-  if (isLoading && !user) {
+ /*  if (isLoading && !user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
@@ -97,7 +97,12 @@ function Register() {
         </Typography>
       </Box>
     );
-  }
+  } */
+
+
+    if (isLoading && !user) {
+  return <LoadingScreen title="Creating Your Account" message="Just a moment while we set things up for you..." />;
+}
 
   if (user) {
     return null;

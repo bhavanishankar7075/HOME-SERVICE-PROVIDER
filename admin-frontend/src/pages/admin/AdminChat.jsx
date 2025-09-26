@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { blue, grey, red, green } from '@mui/material/colors';
+import AdminLoadingScreen from '../../Components/AdminLoadingScreen';
 
 const modernTheme = createTheme({
     palette: {
@@ -536,10 +537,9 @@ const AdminChat = () => {
         };
     }, [fetchConversations, selectedConvo]);
     
-    if (loading) {
-        return <Stack justifyContent="center" alignItems="center" sx={{ height: '100vh' }}><CircularProgress /></Stack>;
-    }
-
+  if (loading) {
+  return <AdminLoadingScreen message="Loading Conversations..." />;
+}
     const conversationListComponent = (
         <ConversationList
             conversations={conversations}

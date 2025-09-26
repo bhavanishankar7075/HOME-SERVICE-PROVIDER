@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import Pagination from '@mui/material/Pagination';
 import io from 'socket.io-client';
 import '../styles/Services.css';
+import AdminLoadingScreen from "../Components/AdminLoadingScreen";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -551,9 +552,7 @@ const Services = () => {
           {loading ? <CircularProgress size={24} color="inherit" /> : 'Bulk Delete'}
         </Button>
         {loading && !paginatedServices.length ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <CircularProgress />
-          </Box>
+  <AdminLoadingScreen message="Loading Services..." />
         ) : (
           paginatedServices.map((service) => (
             <Card

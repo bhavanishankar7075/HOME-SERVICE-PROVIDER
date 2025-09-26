@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import { setUser } from '../redux/authSlice';
 import io from 'socket.io-client';
+import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL, { autoConnect: false });
@@ -260,12 +261,24 @@ function ProviderHome() {
     );
   }
 
-  if (loading) {
+/*   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
   }
   if (error) {
     return <Container sx={{ py: 8 }}><Alert severity="error">{error}</Alert></Container>;
-  }
+  } */
+
+    if (loading) {
+  return <LoadingScreen title="Welcome Back!" message="Preparing your provider homepage..." />;
+}
+
+if (error) {
+  return (
+    <Container sx={{ mt: '70px', py: 8 }}>
+      <Alert severity="error">{error}</Alert>
+    </Container>
+  );
+}
   if (!user || !dashboardData) return null;
 
   console.log('Redux user state:', user);

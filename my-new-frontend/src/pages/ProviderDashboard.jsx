@@ -21,7 +21,7 @@ import {
 import io from 'socket.io-client';
 import { setUser, clearUser, setLocation, clearNotifications } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
-
+import LoadingScreen from '../components/LoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
@@ -494,8 +494,12 @@ function ProviderDashboard() {
 
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
-  if (loading && !profile) return <CircularProgress sx={{ display: 'block', margin: '100px auto' }} />;
-  if (error) return <Alert severity="error">{error}</Alert>;
+/*   if (loading && !profile) return <CircularProgress sx={{ display: 'block', margin: '100px auto' }} />;
+ */ 
+if (loading && !profile) {
+  return <LoadingScreen title="Loading Dashboard" message="Getting your profile and bookings ready..." />;
+}
+ if (error) return <Alert severity="error">{error}</Alert>;
   if (!user || !profile) return null;
 
   const assignedBookings = bookings.filter(b => b.status === 'assigned');

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
+import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -89,9 +90,10 @@ const Payments = () => {
         onChange={(e) => setSearch(e.target.value)}
       />
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Box>
+       <LoadingScreen 
+  title="Processing Payment" 
+  message="Please wait, do not refresh the page..." 
+/>
       ) : (
         <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)' }}>
           <Table>

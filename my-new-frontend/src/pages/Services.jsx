@@ -21,6 +21,7 @@ import {
   Star as StarIcon, SupportAgent as SupportIcon
 } from "@mui/icons-material";
 import "../styles/Services.css";
+import LoadingScreen from "../components/LoadingScreen";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -276,14 +277,18 @@ const Services = () => {
     { title: '24/7 Support', description: 'Our team is here to assist you anytime.', icon: <SupportIcon sx={{ color: '#4F46E5' }} /> },
   ];
 
-  if (loading) {
+ /*  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#F9FAFB' }}>
         <CircularProgress size={60} sx={{ color: '#4F46E5' }} />
         <Typography variant="h6" sx={{ ml: 2, color: '#4B5563' }}>Loading Services...</Typography>
       </Box>
     );
-  }
+  } */
+
+    if (loading) {
+  return <LoadingScreen title="Our Services" message="Finding the best options for you..." />;
+}
 
   const proceedButtonText = paymentMethod === 'Stripe' ? 'Proceed to Payment' : 'Confirm COD Booking';
 

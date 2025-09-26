@@ -7,6 +7,7 @@ import {
   Button, Card, CardActionArea, CardContent, CardMedia, Typography, Box, CircularProgress, Alert, Container, Grid, Paper,
   Autocomplete, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Stack, Divider, Collapse, Avatar, Rating,
 } from '@mui/material';
+import LoadingScreen from '../components/LoadingScreen';
 import {
   Search as SearchIcon, ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon, EventAvailable as EventAvailableIcon,
   PinDrop as PinDropIcon, DoneAll as DoneAllIcon, VerifiedUser as VerifiedUserIcon, CalendarMonth as CalendarMonthIcon,
@@ -524,18 +525,26 @@ const Home = () => {
   const getImageUrl = (image) => image || 'https://via.placeholder.com/400?text=No+Image'; // <-- UPDATED
 
   if (loading || feedbackLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+   /*  return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
-      </Box>
-    );
+      </Box>  
+      
+    ); */
+
+    return <LoadingScreen />;
   }
 
   if (message.open || errorMessage) {
     return (
-      <Box sx={{ p: 4 }}>
-        <Alert severity="error">{message.open ? message.text : errorMessage}</Alert>
-      </Box>
+      <Box sx={{ 
+  maxWidth: '1200px', // Sets a max-width for large screens
+  mx: 'auto',         // Horizontally centers the box
+  p: 4,               // Keeps your existing padding
+  mt: '70px'          // Adds 70px margin to the top
+}}>
+  <Alert severity="error">{message.open ? message.text : errorMessage}</Alert>
+</Box>
     );
   }
 

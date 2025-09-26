@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Box, Typography, Button, CircularProgress, Alert, TextField } from '@mui/material';
 import { setUser, setLoading } from '../redux/authSlice';
+import LoadingScreen from '../components/LoadingScreen';
 
 function ProviderProfile() {
   const { user, token } = useSelector((state) => state.auth);
@@ -37,9 +38,20 @@ function ProviderProfile() {
     localStorage.removeItem('user');
   };
 
-  if (loading) return <CircularProgress className="flex justify-center mt-20" />;
+/*   if (loading) return <CircularProgress className="flex justify-center mt-20" />;
   if (error) return <Alert severity="error" className="max-w-md mx-auto mt-5">{error}</Alert>;
-  if (!user || user.role !== 'provider') return null;
+ */ 
+if (loading) {
+  return <LoadingScreen title="Loading Content" message="Please wait while we prepare the page for you..." />;
+}
+if (error) {
+  return (
+    <Box sx={{ maxWidth: 'md', mx: 'auto', mt: '70px', p: 2 }}>
+      <Alert severity="error">{error}</Alert>
+    </Box>
+  );
+}
+ if (!user || user.role !== 'provider') return null;
 
   return (
     <Box className="min-h-screen p-6 mx-auto bg-gray-100 max-w-7xl">

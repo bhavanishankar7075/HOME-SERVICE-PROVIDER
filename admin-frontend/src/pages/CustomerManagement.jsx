@@ -49,6 +49,7 @@ import axios from "./axiosInstance";
 import { useSelector,  } from 'react-redux';
 import io from "socket.io-client";
 import "../styles/CustomerManagement.css";
+import AdminLoadingScreen from "../Components/AdminLoadingScreen";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
@@ -322,10 +323,7 @@ const CustomerManagement = () => {
         </Box>
       </Box>
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-          <CircularProgress />
-        </Box>
+      {loading ? (<AdminLoadingScreen message="Loading Customers..." />
       ) : (
         <>
           <Grid container spacing={3} sx={{ mb: 4 }}>

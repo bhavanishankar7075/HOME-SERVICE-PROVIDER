@@ -37,6 +37,7 @@ import { ServicesProvider } from './context/ServicesContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PricingPage from './pages/PricingPage';
 import { useSocketManager } from './hooks/useSocketManager';
+import LoadingScreen from './components/LoadingScreen';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
 const FooterWrapper = () => {
@@ -110,12 +111,7 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate
-        loading={
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Loading application...</Typography>
-          </Box>
-        }
+        loading={<LoadingScreen title="Welcome" message="Initializing your experience..." />}
         persistor={persistor}
         onBeforeLift={() => console.log('App.jsx: PersistGate hydrating...')}
       >

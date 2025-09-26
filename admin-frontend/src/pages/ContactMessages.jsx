@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { format } from 'date-fns';
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -61,8 +62,7 @@ const ContactMessages = () => {
         </IconButton>
         <Typography variant="h5">Contact Messages</Typography>
       </Box>
-      {loading ? (
-        <CircularProgress sx={{ display: 'block', mx: 'auto' }} />
+      {loading ? (<AdminLoadingScreen message="Loading Customer Messages..." />
       ) : (
         <Paper sx={{ p: 2, borderRadius: 2 }}>
           <List>

@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import io from 'socket.io-client';
 import { Refresh, ArrowBack } from '@mui/icons-material';
+import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -106,8 +107,7 @@ const FaqsContacts = () => {
           <Tab label="Contact Messages" />
         </Tabs>
 
-        {loading ? (
-          <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />
+        {loading ? (<AdminLoadingScreen message="Loading FAQs & Contacts..." /> 
         ) : (
           <>
             {tabValue === 0 && (
