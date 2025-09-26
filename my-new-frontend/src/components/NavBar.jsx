@@ -343,7 +343,7 @@ const Navbar = () => {
                     <List dense>
                       {searchResults.map(service => (
                         <ListItemButton key={service._id} component={Link} to={`/services/${service._id}`} onClick={() => { setSearchQuery(''); setSearchResults([]); }}>
-                          <ListItemAvatar><Avatar src={service.image || undefined}>{!service.image && service.name.charAt(0)}</Avatar></ListItemAvatar> // <-- UPDATED
+                          <ListItemAvatar><Avatar src={service.image || undefined}>{!service.image && service.name.charAt(0)}</Avatar></ListItemAvatar> 
                           <ListItemText primary={service.name} secondary={`₹${service.price}`} />
                         </ListItemButton>
                       ))}
@@ -390,7 +390,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <div className="user-menu-container">
                 <button className="user-avatar-btn">
-                  <Avatar src={user?.profile?.image || ''}> // <-- UPDATED
+                  <Avatar src={user?.profile?.image || ''}>
                     {user?.name?.charAt(0).toUpperCase()}
                   </Avatar>
                   <span className="user-name-display">{user?.name}</span>
