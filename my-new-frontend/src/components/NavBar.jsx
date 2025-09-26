@@ -50,7 +50,6 @@ const useSocketNotifications = () => {
       socket.on('newBookingAssigned', handleNewNotification);
       socket.on('newAdminReply', handleNewNotification);
 
-      // Fetch initial notifications from backend
       const fetchNotifications = async () => {
         try {
           const response = await axios.get(`${API_URL}/api/notifications`, {
@@ -139,6 +138,33 @@ const Navbar = () => {
   const sessionTokenRef = useRef(null);
 
   const cityIcons = { 'Mumbai': '🏙️', 'Delhi': '🕌', 'Bangalore': '🌳', 'Visakhapatnam': '🚢', 'Chennai': '🏖️', 'Kolkata': '🚋', 'Hyderabad': '🍲' };
+
+  // ====================================================================
+  // ====> THIS IS THE NEW CODE TO FIX THE IMAGE ISSUE ON LOGIN <====
+  // This useEffect runs when the user logs in (token becomes available)
+  // It fetches the full profile to make sure the navbar has the image URL.
+  useEffect(() => {
+    const syncUserProfile = async () => {
+      // Check if we have a token and user, but the user object is missing profile details
+      if (token && user && !user.profile) {
+        try {
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          const { data } = await axios.get(`${API_URL}/api/users/profile`, config);
+          // Update the user in Redux store with the full profile
+          dispatch(setUser({ user: data, token }));
+        } catch (error) {
+          console.error("Failed to sync user profile in Navbar:", error);
+          // If token is invalid, log the user out
+          if (error.response?.status === 401) {
+            dispatch(clearUser());
+          }
+        }
+      }
+    };
+    syncUserProfile();
+  }, [token, user, dispatch]);
+  // ====================================================================
+
 
   useEffect(() => {
     const initGoogleMaps = () => {
@@ -343,7 +369,7 @@ const Navbar = () => {
                     <List dense>
                       {searchResults.map(service => (
                         <ListItemButton key={service._id} component={Link} to={`/services/${service._id}`} onClick={() => { setSearchQuery(''); setSearchResults([]); }}>
-                          <ListItemAvatar><Avatar src={service.image || undefined}>{!service.image && service.name.charAt(0)}</Avatar></ListItemAvatar> 
+                          <ListItemAvatar><Avatar src={service.image || undefined}>{!service.image && service.name.charAt(0)}</Avatar></ListItemAvatar>
                           <ListItemText primary={service.name} secondary={`₹${service.price}`} />
                         </ListItemButton>
                       ))}
