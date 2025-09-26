@@ -1,4 +1,4 @@
-const asyncHandler = require('express-async-handler');
+/* const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Message = require('../models/Message');
 const Plan = require('../models/Plan');
@@ -255,7 +255,270 @@ const toggleAvailability = asyncHandler(async (req, res) => {
   }
 
   res.json(updatedUser);
+}); */
+
+
+
+
+const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
+const Message = require('../models/Message');
+const Plan = require('../models/Plan');
+const multer = require('multer');
+const axios = require('axios');
+const bcrypt = require('bcrypt');
+const { storage } = require('../config/cloudinary'); //  <-- 1. IMPORT CLOUDINARY STORAGE
+
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+
+//  <-- 2. REMOVED the old multer.diskStorage configuration
+
+// Use the new Cloudinary storage for multer
+const upload = multer({ storage });
+
+const convertToCity = async (address) => {
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+    );
+    if (response.data.status === 'OK' && response.data.results.length > 0) {
+      const addressComponents = response.data.results[0].address_components;
+      const { lat, lng } = response.data.results[0].geometry.location;
+      return {
+        fullAddress: response.data.results[0].formatted_address || address,
+        details: {
+          streetNumber: addressComponents.find(comp => comp.types.includes('street_number'))?.long_name || '',
+          street: addressComponents.find(comp => comp.types.includes('route'))?.long_name || '',
+          city: addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '',
+          state: addressComponents.find(comp => comp.types.includes('administrative_area_level_1'))?.long_name || '',
+          country: addressComponents.find(comp => comp.types.includes('country'))?.long_name || '',
+          postalCode: addressComponents.find(comp => comp.types.includes('postal_code'))?.long_name || ''
+        },
+        coordinates: { lat, lng }
+      };
+    }
+    console.log(`[convertToCity] Geocoding failed for address: ${address}`);
+    return {
+      fullAddress: address,
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
+  } catch (error) {
+    console.error(`[convertToCity] Geocoding error for address ${address}: ${error.message}`);
+    return {
+      fullAddress: address,
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
+  }
+};
+
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  let bookingLimit = 5; // Default for Free plan
+  if (user.subscriptionTier && ['pro', 'elite'].includes(user.subscriptionTier)) {
+    const plan = await Plan.findOne({ name: user.subscriptionTier.charAt(0).toUpperCase() + user.subscriptionTier.slice(1) });
+    bookingLimit = plan ? plan.bookingLimit : bookingLimit;
+  }
+
+  let subscriptionStatusMessage = '';
+  if (user.subscriptionStatus === 'past_due') {
+    subscriptionStatusMessage = 'Payment required to restore active status.';
+  } else if (user.subscriptionTier !== 'free' && user.subscriptionStartDate) {
+    const expiryDate = new Date(user.subscriptionStartDate);
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
+    const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+    if (daysUntilExpiry <= 3 && daysUntilExpiry > 0) {
+      subscriptionStatusMessage = `Subscription expires in ${daysUntilExpiry} day(s).`;
+      if (global.io) {
+        global.io.to(user._id.toString()).emit('subscriptionWarning', {
+          message: `Your ${user.subscriptionTier} subscription expires in ${daysUntilExpiry} day(s). Please renew to continue receiving bookings.`
+        });
+      }
+    }
+  }
+
+  console.log('[getProfile] Returning user:', {
+    userId: user._id,
+    name: user.name,
+    subscriptionTier: user.subscriptionTier,
+    subscriptionStatus: user.subscriptionStatus,
+    currentBookingCount: user.currentBookingCount,
+    bookingLimit,
+    subscriptionStatusMessage,
+    profileExists: !!user.profile,
+    profileImage: user.profile?.image || '/images/default-user.png'
+  });
+
+  res.json({
+    ...user.toObject(),
+    bookingLimit,
+    subscriptionStatusMessage
+  });
 });
+
+const updateProfile = [
+  upload.single('profileImage'),
+  asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const name = req.body.name ? req.body.name.trim() : currentUser.name;
+    const phone = req.body.phone || currentUser.phone;
+    let locationInput = req.body.location;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    let location = currentUser.profile?.location || {
+      fullAddress: '',
+      details: { streetNumber: '', street: '', city: '', state: '', country: '', postalCode: '' },
+      coordinates: { lat: null, lng: null }
+    };
+    if (locationInput) {
+      console.log('Location input received in updateProfile:', locationInput);
+      if (typeof locationInput === 'string') {
+        try {
+          locationInput = JSON.parse(locationInput);
+        } catch (e) {
+          // Treat as string address
+        }
+      }
+      if (typeof locationInput === 'string') {
+        location = await convertToCity(locationInput);
+      } else if (locationInput.fullAddress && typeof locationInput.fullAddress === 'string') {
+        location = await convertToCity(locationInput.fullAddress);
+        if (locationInput.details) {
+          location.details = {
+            streetNumber: locationInput.details.streetNumber || location.details.streetNumber,
+            street: locationInput.details.street || location.details.street,
+            city: locationInput.details.city || location.details.city,
+            state: locationInput.details.state || location.details.state,
+            country: locationInput.details.country || location.details.country,
+            postalCode: locationInput.details.postalCode || location.details.postalCode
+          };
+        }
+      } else {
+        location = { ...location, ...locationInput };
+      }
+      console.log('Mapped location for update:', location);
+    }
+
+    const updateData = {
+      name,
+      phone,
+      profile: {
+        ...currentUser.profile,
+        location,
+        image: currentUser.profile?.image || '/images/default-user.png',
+        skills: currentUser.profile?.skills || [],
+        availability: req.body.availability || currentUser.profile?.availability || 'Unavailable',
+        status: currentUser.profile?.status || 'active',
+        feedback: currentUser.profile?.feedback || [],
+        bookedServices: currentUser.profile?.bookedServices || []
+      }
+    };
+
+    if (req.body.skills) {
+      updateData.profile.skills = req.body.skills.split(',').map(skill => skill.trim());
+    }
+
+    //  <-- 3. THIS IS THE KEY CHANGE
+    if (req.file) {
+      // `req.file.path` now contains the full URL from Cloudinary
+      updateData.profile.image = req.file.path;
+    }
+
+    console.log('[updateProfile] updating with data:', updateData);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    console.log('[updateProfile] Returning updated user:', {
+      userId: updatedUser._id,
+      name: updatedUser.name,
+      subscriptionTier: updatedUser.subscriptionTier,
+      subscriptionStatus: updatedUser.subscriptionStatus,
+      profileExists: !!updatedUser.profile,
+      profileImage: updatedUser.profile?.image,
+      location: updatedUser.profile?.location
+    });
+
+    if (global.io) {
+      global.io.to(userId.toString()).emit('userUpdated', updatedUser.toObject());
+    }
+
+    res.json(updatedUser);
+  })
+];
+
+const toggleStatus = asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.profile.status = user.profile.status === 'active' ? 'inactive' : 'active';
+  await user.save();
+
+  const updatedUser = await User.findById(userId).select('-password');
+  console.log('[toggleStatus] Returning user:', {
+    userId: updatedUser._id,
+    status: updatedUser.profile.status,
+    subscriptionTier: updatedUser.subscriptionTier,
+    subscriptionStatus: updatedUser.subscriptionStatus
+  });
+
+  if (global.io) {
+    global.io.to(userId.toString()).emit('userUpdated', updatedUser.toObject());
+  }
+
+  res.json(updatedUser);
+});
+
+const toggleAvailability = asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.profile.availability = user.profile.availability === 'Available' ? 'Unavailable' : 'Available';
+  await user.save();
+
+  const updatedUser = await User.findById(userId).select('-password');
+  console.log('[toggleAvailability] Returning user:', {
+    userId: updatedUser._id,
+    availability: updatedUser.profile.availability,
+    subscriptionTier: user.subscriptionTier,
+    subscriptionStatus: user.subscriptionStatus
+  });
+
+  if (global.io) {
+    global.io.to(userId.toString()).emit('userUpdated', updatedUser.toObject());
+  }
+
+  res.json(updatedUser);
+});
+
 
 const cancelSubscription = asyncHandler(async (req, res) => {
   if (!stripe) {

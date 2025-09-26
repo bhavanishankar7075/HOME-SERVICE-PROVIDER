@@ -1,4 +1,4 @@
-const asyncHandler = require('express-async-handler');
+/* const asyncHandler = require('express-async-handler');
 const Service = require('../models/Service');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
@@ -212,7 +212,280 @@ const updateService = [
       return res.status(400).json({ msg: `Error saving service: ${error.message}` });
     }
   }),
+]; */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const asyncHandler = require('express-async-handler');
+const Service = require('../models/Service');
+const Booking = require('../models/Booking');
+const User = require('../models/User');
+const Joi = require('joi');
+const { cloudinary } = require('../config/cloudinary'); // <-- 1. IMPORT CLOUDINARY
+
+const serviceSchema = Joi.object({
+  name: Joi.string().required().messages({
+    'string.empty': 'Name is required',
+    'any.required': 'Name is required',
+  }),
+  description: Joi.string().required().messages({
+    'string.empty': 'Description is required',
+    'any.required': 'Description is required',
+  }),
+  price: Joi.number().required().messages({
+    'number.base': 'Price must be a number',
+    'any.required': 'Price is required',
+  }),
+  category: Joi.string().valid('Home Maintenance', 'Cleaning', 'Plumbing', 'Electrical', 'Painting', 'Carpentry', 'Landscaping').required().messages({
+    'any.only': 'Category must be one of Home Maintenance, Cleaning, Plumbing, Electrical, Painting, Carpentry, Landscaping',
+    'any.required': 'Category is required',
+  }),
+  offer: Joi.string().allow('').optional(),
+  deal: Joi.string().allow('').optional(),
+  retainedImageUrls: Joi.array().items(Joi.string()).optional(),
+  
+  availableSlots: Joi.object().pattern(Joi.string(), Joi.array().items(Joi.string())).optional().messages({
+    'object.pattern.base': 'Available slots must be an object with date strings as keys and time arrays as values',
+  }),
+}).unknown(true);
+
+
+// <-- 2. REPLACED old deleteFile function with Cloudinary version
+const deleteFileFromCloudinary = async (imageUrl) => {
+  try {
+    if (!imageUrl) return;
+    // Extract the public_id from the full URL.
+    // Example URL: https://res.cloudinary.com/demo/image/upload/v123/folder/image.jpg
+    // public_id is: folder/image
+    const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
+    await cloudinary.uploader.destroy(publicId);
+    console.log(`Deleted image from Cloudinary: ${publicId}`);
+  } catch (error) {
+    console.error(`Error deleting file from Cloudinary ${imageUrl}:`, error.message);
+  }
+};
+
+
+const createService = [
+  asyncHandler(async (req, res) => {
+    const { error } = serviceSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ msg: error.details[0].message });
+    }
+
+    const { name, description, price, category, offer, deal } = req.body;
+    
+    // <-- 3. UPDATED to get full path from Cloudinary
+    const image = req.files?.image ? req.files.image[0].path : '';
+    const additionalImages = req.files?.additionalImages
+      ? req.files.additionalImages.map(file => file.path)
+      : [];
+
+    const service = await Service.create({
+      name,
+      description,
+      price: parseFloat(price),
+      category,
+      createdBy: req.user._id,
+      image,
+      additionalImages,
+      offer: offer || '',
+      deal: deal || '',
+      availableSlots: {},
+    });
+
+    const createdService = await Service.findById(service._id).populate('createdBy', 'name');
+    const serviceCount = await Service.countDocuments();
+    if (global.io) {
+      global.io.emit('servicesUpdated', { count: serviceCount });
+      global.io.emit('serviceAdded', createdService);
+    }
+
+    res.status(201).json(createdService);
+  }),
 ];
+
+const getServices = asyncHandler(async (req, res) => {
+  const { name, category, price_gte, price_lte, offer, deal, sort } = req.query;
+  const query = {};
+
+  if (name) query.name = { $regex: name, $options: 'i' };
+  if (category) query.category = category;
+  if (price_gte && price_lte) query.price = { $gte: parseFloat(price_gte), $lte: parseFloat(price_lte) };
+  if (offer === 'yes') query.offer = { $ne: '' };
+  else if (offer === 'no') query.offer = '';
+  if (deal === 'yes') query.deal = { $ne: '' };
+  else if (deal === 'no') query.deal = '';
+
+  let services = Service.find(query).populate('createdBy', 'name');
+  if (sort === 'price_asc') services = services.sort({ price: 1 });
+  else if (sort === 'price_desc') services = services.sort({ price: -1 });
+  else if (sort === 'createdAt_asc') services = services.sort({ createdAt: 1 });
+  else if (sort === 'createdAt_desc') services = services.sort({ createdAt: -1 });
+
+  const result = await services;
+  res.json(result);
+});
+
+const updateService = [
+  asyncHandler(async (req, res) => {
+    // Parse formData fields into an object
+    const formDataObj = {};
+    for (let [key, value] of Object.entries(req.body)) {
+      if (key === 'availableSlots' && typeof value === 'string') {
+        try {
+          formDataObj[key] = JSON.parse(value); // Parse JSON string into object
+        } catch (e) {
+          console.error('Error parsing availableSlots:', e.message);
+          return res.status(400).json({ msg: `Invalid availableSlots format: ${e.message}` });
+        }
+      } else if (key === 'retainedImageUrls' && typeof value === 'string') {
+        try {
+          formDataObj[key] = JSON.parse(value); // Parse JSON string into array
+        } catch (e) {
+          console.error('Error parsing retainedImageUrls:', e.message);
+          return res.status(400).json({ msg: `Invalid retainedImageUrls format: ${e.message}` });
+        }
+      } else if (Array.isArray(value)) {
+        formDataObj[key] = value;
+      } else {
+        formDataObj[key] = value;
+      }
+    }
+
+    // Debug log for retainedImageUrls
+    console.log('Received retainedImageUrls:', req.body.retainedImageUrls);
+
+    const { error } = serviceSchema.validate(formDataObj);
+    if (error) {
+      console.error('Validation error:', error.details);
+      return res.status(400).json({ msg: error.details[0].message });
+    }
+
+    const { name, description, price, category, offer, deal, retainedImageUrls, availableSlots: availableSlotsInput } = formDataObj;
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ msg: 'Service not found' });
+    }
+
+    if (service.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ msg: 'Not authorized to update this service' });
+    }
+
+    // <-- 4. UPDATED to get full path from Cloudinary
+    const newImage = req.files?.image ? req.files.image[0].path : undefined;
+    const additionalImages = req.files?.additionalImages
+      ? req.files.additionalImages.map(file => file.path)
+      : [];
+
+    if ((newImage !== undefined || formDataObj.image === '') && service.image) {
+      await deleteFileFromCloudinary(service.image); // Use Cloudinary delete
+      service.image = newImage || '';
+    }
+
+    let retainedUrls = [];
+    if (retainedImageUrls) {
+      retainedUrls = Array.isArray(retainedImageUrls) ? retainedImageUrls : [retainedImageUrls];
+      const invalidUrls = retainedUrls.filter(url => !service.additionalImages.includes(url));
+      if (invalidUrls.length > 0) {
+        console.warn('Invalid retained image URLs:', invalidUrls);
+        retainedUrls = retainedUrls.filter(url => service.additionalImages.includes(url));
+      }
+      const imagesToDelete = service.additionalImages.filter(img => !retainedUrls.includes(img));
+      for (const img of imagesToDelete) {
+        await deleteFileFromCloudinary(img); // Use Cloudinary delete
+      }
+    }
+
+    const uniqueAdditionalImages = [...new Set(additionalImages)];
+    if (uniqueAdditionalImages.length < additionalImages.length) {
+      console.warn('Duplicate additional images detected:', additionalImages);
+    }
+
+    service.name = name || service.name;
+    service.description = description || service.description;
+    service.price = price ? parseFloat(price) : service.price;
+    service.category = category || service.category;
+    service.offer = offer !== undefined ? offer : service.offer;
+    service.deal = deal !== undefined ? deal : service.deal;
+    service.additionalImages = [...retainedUrls, ...uniqueAdditionalImages];
+
+    // Process availableSlots
+    const availableSlots = new Map();
+    if (availableSlotsInput && typeof availableSlotsInput === 'object' && !Array.isArray(availableSlotsInput)) {
+      Object.entries(availableSlotsInput).forEach(([date, times]) => {
+        if (date && Array.isArray(times)) {
+          availableSlots.set(date, times.filter(time => time && typeof time === 'string'));
+        }
+      });
+    }
+    service.availableSlots = availableSlots;
+
+    try {
+      const updatedService = await service.save();
+      const populatedService = await Service.findById(updatedService._id).populate('createdBy', 'name');
+      const serviceCount = await Service.countDocuments();
+      if (global.io) {
+        global.io.emit('servicesUpdated', { count: serviceCount });
+        global.io.emit('serviceUpdated', populatedService);
+        global.io.emit('bookingUpdated');
+      }
+      res.json(populatedService);
+    } catch (error) {
+      console.error('Error saving service:', error.message);
+      return res.status(400).json({ msg: `Error saving service: ${error.message}` });
+    }
+  }),
+];
+
 
 const deleteService = asyncHandler(async (req, res) => {
   const service = await Service.findById(req.params.id);
@@ -275,35 +548,6 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
   const services = await Service.find({}).sort({ createdAt: -1 }).limit(3);
   res.json(services);
 });
-
-/* const getServiceAvailability = asyncHandler(async (req, res) => {
-  const { date } = req.query;
-  const { serviceId } = req.params;
-
-  if (!date || !serviceId) {
-    return res.status(400).json({ message: 'Service ID and date are required' });
-  }
-
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const bookingsOnDate = await Booking.find({
-    serviceId: serviceId,
-    scheduledTime: { $gte: startOfDay, $lte: endOfDay },
-  });
-
-  const bookedTimes = bookingsOnDate.map(booking => {
-    const time = new Date(booking.scheduledTime);
-    return `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-  });
-
-  const allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-  const availableSlots = allSlots.filter(slot => !bookedTimes.includes(slot));
-  
-  res.json(availableSlots);
-}); */
 
 
 // In getServiceAvailability
