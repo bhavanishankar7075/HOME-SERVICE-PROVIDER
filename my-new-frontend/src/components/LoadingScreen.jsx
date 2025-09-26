@@ -1,105 +1,156 @@
 import React from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
-import serviceHubLogo from '../assets/service-hub-logo.png'; // Ensure this path is correct
+import serviceHubLogo from '../assets/service-hub-logo.png'; // Ensure your logo path is correct
 
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
+// Keyframes for the orbs spiraling into the center
+const orbit = keyframes`
+  0% {
+    transform: rotate(0deg) translateX(200px) scale(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) translateX(0) scale(0);
+    opacity: 0;
+  }
 `;
 
-const scaleUp = keyframes`
-  from { transform: scale(0.8); }
-  to { transform: scale(1); }
+// Keyframes for the main logo reveal (fade and scale)
+const reveal = keyframes`
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 `;
 
-const pulseGlow = keyframes`
-  0% { transform: scale(0.5); opacity: 0; }
-  50% { opacity: 0.1; }
-  100% { transform: scale(1.5); opacity: 0; }
+// A continuous, subtle breathing animation for after the reveal
+const breath = keyframes`
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
 `;
 
-// <-- UPDATED to accept props
+// Keyframes for the text fading in
+const fadeInText = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 const LoadingScreen = ({ title, message }) => {
+  const orbs = [0, 0.15, 0.3, 0.45, 0.6]; // Animation delays for each orb
+
   return (
     <Box
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        width: '100vw',
         position: 'fixed',
         top: 0,
         left: 0,
-        bgcolor: '#f4f7f9',
+        width: '100vw',
+        height: '100vh',
         zIndex: 9999,
-        animation: `${fadeIn} 0.5s ease-in-out`,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        // A subtle, premium light gradient background
+        background: 'radial-gradient(circle, #ffffff 0%, #f4f7f9 100%)',
       }}
     >
-      <Box sx={{ textAlign: 'center', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: 4 
+        }}
+      >
         <Box
           sx={{
-            position: 'absolute',
-            width: { xs: 250, md: 350 },
-            height: { xs: 250, md: 350 },
-            bgcolor: 'primary.main',
-            borderRadius: '50%',
-            zIndex: -1,
-            animation: `${pulseGlow} 2s infinite ease-out`,
-            opacity: 0,
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            width: { xs: 250, md: 350 },
-            height: { xs: 250, md: 350 },
-            bgcolor: 'primary.main',
-            borderRadius: '50%',
-            zIndex: -1,
-            animation: `${pulseGlow} 2s infinite ease-out`,
-            animationDelay: '1s',
-            opacity: 0,
-          }}
-        />
-        <Box
-          component="img"
-          src={serviceHubLogo}
-          alt="Loading Service Hub"
-          sx={{
-            width: { xs: 160, sm: 180 },
-            height: { xs: 160, sm: 180 },
-            objectFit: 'contain',
-            animation: `${scaleUp} 0.8s 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) both, ${fadeIn} 0.8s 0.2s ease-out both`,
-            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-            borderRadius: '50%',
-            backgroundColor: 'white'
-          }}
-        />
-      </Box>
-
-      <Box sx={{
-        textAlign: 'center',
-        position: 'absolute',
-        bottom: '10%',
-        animation: `${fadeIn} 1s 0.8s ease-out both`
-      }}>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 'bold',
-            letterSpacing: '2px',
-            textTransform: 'uppercase',
-            color: 'primary.main',
+            position: 'relative',
+            width: { xs: 180, sm: 200, md: 220 }, // Increased size
+            height: { xs: 180, sm: 200, md: 220 },
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            // Add the continuous breathing animation after the initial reveal
+            animation: `${breath} 4s infinite ease-in-out`,
+            animationDelay: '2s',
           }}
         >
-          {/* // <-- UPDATED to use the title prop or a default */}
-          {title || 'Service Hub'}
-        </Typography>
-        <Typography sx={{ color: 'text.secondary' }}>
-          {/* // <-- UPDATED to use the message prop or a default */}
-          {message || 'Connecting you to top services...'}
-        </Typography>
+          {/* The orbiting orbs that assemble */}
+          {orbs.map((delay, index) => (
+            <Box
+              key={index}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '12px',
+                height: '12px',
+                bgcolor: '#4F46E5', // Your primary brand color
+                borderRadius: '50%',
+                animation: `${orbit} 1.8s forwards`, // 'forwards' stops it at the end
+                animationDelay: `${delay}s`,
+                opacity: 0, // Start hidden, animation will make it visible
+              }}
+            />
+          ))}
+
+          {/* Your Service Hub Logo - revealed after the orbs */}
+          <Box
+            component="img"
+            src={serviceHubLogo}
+            alt="Service Hub"
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: '50%',
+              boxShadow: '0 15px 40px rgba(79, 70, 229, 0.15)', // Softer, branded shadow
+              // Animation is delayed to start as the orbs converge
+              animation: `${reveal} 0.8s 1.2s cubic-bezier(0.165, 0.84, 0.44, 1) forwards`,
+              opacity: 0, // Start hidden
+            }}
+          />
+        </Box>
+
+        <Box sx={{
+          animation: `${fadeInText} 0.8s 1.8s ease-out forwards`,
+          opacity: 0, // Start hidden
+          textAlign: 'center',
+        }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              color: 'primary.main',
+            }}
+          >
+            {title || 'Service Hub'}
+          </Typography>
+          <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
+            {message || 'Connecting you to top services...'}
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

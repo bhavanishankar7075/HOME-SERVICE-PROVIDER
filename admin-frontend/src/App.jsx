@@ -27,6 +27,7 @@ import PlansPage from './pages/PlansPage';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import PageTransition from './Components/PageTransition'
 import AdminLoadingScreen from './Components/AdminLoadingScreen';
+import ScrollToTop from './Components/ScrollToTop';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -188,6 +189,7 @@ function App() {
               <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
                 <Box component="main" sx={{ flex: 1 }}>
                   <AnimatedRoutes />
+                  <ScrollToTop/>
                 </Box>
               </Box>
             </Router>
