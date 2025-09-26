@@ -9,7 +9,6 @@ const path = require('path');
 
 // Load environment variables
 dotenv.config();
-app.use(compression());
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
@@ -43,6 +42,7 @@ console.log('------------------------------------');
 connectDB();
 
 const app = express();
+app.use(compression());
 const server = http.createServer(app);
 
 // Middleware
