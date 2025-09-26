@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const http = require('http');
@@ -8,7 +9,7 @@ const path = require('path');
 
 // Load environment variables
 dotenv.config();
-
+app.use(compression());
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/bookings');
