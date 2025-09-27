@@ -10,7 +10,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'home-service-uploads', // A folder name in your Cloudinary account
-    allowed_formats: ['jpeg', 'png', 'jpg'],
+    allowed_formats: ['jpeg', 'png', 'jpg','avif'],
   },
 });
 
