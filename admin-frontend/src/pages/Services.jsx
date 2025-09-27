@@ -723,10 +723,10 @@ const Services = () => {
 
       <Button
         variant="contained"
-        onClick={() => navigate('/admin/orders')}
+        onClick={() => navigate('/admin/bookings')}
         sx={{ bgcolor: '#4a90e2', '&:hover': { bgcolor: '#357abd' }, borderRadius: 2 }}
       >
-        Next: Orders
+        Next: Bookings
       </Button>
 
       <Snackbar
