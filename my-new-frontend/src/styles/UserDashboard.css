@@ -1,0 +1,14 @@
+
+@media screen and (max-width: 768px) {
+ 
+  .user {
+    padding-bottom: 0.75rem; /* Reduced bottom padding for tablets */
+  }
+}
+
+@media screen and (max-width: 639px) {
+  
+  .user {
+    padding-bottom: 0.5rem; /* Reduced bottom padding for mobile */
+  }
+}

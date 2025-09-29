@@ -22,6 +22,7 @@ import io from 'socket.io-client';
 import { setUser, clearUser, setLocation, clearNotifications } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
+import '../styles/ProviderDashboard.css'
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
@@ -510,8 +511,8 @@ if (loading && !profile) {
     : workHistory.filter(w => w.feedback?.rating === parseInt(ratingFilter));
 
   return (
-    <Box sx={{ maxWidth: '1200px', margin: 'auto', p: { xs: 2, md: 3 }, mt: 4 }}>
-      <Typography variant="h3" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>Provider Dashboard</Typography>
+    <Box sx={{ maxWidth: '1200px', margin: 'auto',class:"provider", p: { xs: 2, md: 3 }, mt: 4 }}>
+      <Typography variant="h3" gutterBottom sx={{ textAlign: 'center', mb: 4 ,mt:4 }}>Provider Dashboard</Typography>
       <Tabs value={tabValue} onChange={handleTabChange} centered variant="scrollable" scrollButtons="auto" sx={{ mb: 4, backgroundColor: 'white', borderRadius: 2, boxShadow: 1 }}>
         <Tab label="Profile" />
         <Tab label={<Badge color="error" badgeContent={assignedBookings.length} max={9}>New Bookings</Badge>} />

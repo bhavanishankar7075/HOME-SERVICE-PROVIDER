@@ -23,7 +23,7 @@ import io from 'socket.io-client';
 import { setUser, clearUser, clearNotifications, setLocation } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
-
+import '../styles/UserDashboard.css'
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
@@ -422,7 +422,7 @@ if (!user || !profile) {
   console.log('Rendering Tabs with notification count:', notifications.length);
 
   return (
-    <Box sx={{ py: { xs: 6, md: 9 }, bgcolor: '#f4f6f8', minHeight: '100vh' }}>
+    <Box sx={{ py: { xs: 6, md: 9 },class:"user", bgcolor: '#f4f6f8', minHeight: '100vh' }}>
       {scrollbarStyles}
       <Container maxWidth="lg">
         <Typography variant="h4" component="h1" sx={{ mb: 1, textAlign: { xs: 'center', md: 'left' } }}>

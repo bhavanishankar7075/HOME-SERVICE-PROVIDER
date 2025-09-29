@@ -4,7 +4,7 @@ body {
   color: hsl(224 71.4% 4.1%);
   font-family: 'Arial', sans-serif;
   font-feature-settings: 'rlig' 1, 'calt' 1;
-  padding-top: 3rem;
+  padding-top: 2rem;
 }
 /* Ensure space below the navbar for content visibility */
 
@@ -906,7 +906,7 @@ html {
 /* Responsive adjustments */
 @media screen and (max-width: 768px) {
   body {
-    padding-top: 6rem; /* Adjusted for tablet navbar height */
+    padding-top: 1rem; /* Adjusted for tablet navbar height */
   }
   .navbar {
     padding-bottom: 0.75rem; /* Reduced bottom padding for tablets */
@@ -915,7 +915,17 @@ html {
 
 @media screen and (max-width: 639px) {
   body {
-    padding-top: 5rem; /* Adjusted for mobile navbar height */
+    padding-top: 1rem; /* Adjusted for mobile navbar height */
+  }
+  .navbar {
+    padding-bottom: 0.5rem; /* Reduced bottom padding for mobile */
+  }
+}
+
+
+@media screen and (max-width:768px) {
+  body {
+    padding-top: 1rem; /* Adjusted for mobile navbar height */
   }
   .navbar {
     padding-bottom: 0.5rem; /* Reduced bottom padding for mobile */

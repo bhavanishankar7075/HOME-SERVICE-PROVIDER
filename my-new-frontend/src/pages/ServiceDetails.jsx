@@ -61,6 +61,7 @@ import {
 } from "@stripe/react-stripe-js";
 import axios from "axios";
 import LoadingScreen from "../components/LoadingScreen";
+import '../styles/ServiceDetails.css'
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = STRIPE_PUBLISHABLE_KEY
@@ -454,13 +455,15 @@ const ServiceDetails = () => {
                       desc: "Relax as our certified provider delivers top-quality service.",
                     },
                   ].map((item) => (
-                    <Grid item xs={12} sm={4} key={item.title}>
+                    <Grid item xs={12} sm={4} key={item.title} sx={{ display: 'flex' }}>
                       <Paper
                         elevation={3}
                         sx={{
                           p: 3,
                           textAlign: "center",
                           borderRadius: 3,
+                          height: '100%', 
+                          width: '100%',
                           bgcolor: "#F9FAFB",
                           transition: "transform 0.3s",
                           "&:hover": { transform: "translateY(-5px)", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" },
@@ -645,7 +648,7 @@ const ServiceDetails = () => {
                     .filter((s) => s._id !== id)
                     .slice(0, 3)
                     .map((otherService) => (
-                      <Grid item xs={12} sm={4} key={otherService._id}>
+                      <Grid item xs={12} sm={4} key={otherService._id} sx={{ display: 'flex' }}>
                         <Paper
                           elevation={3}
                           sx={{
@@ -653,6 +656,8 @@ const ServiceDetails = () => {
                             borderRadius: 3,
                             textAlign: "center",
                             transition: "transform 0.3s",
+                            height: '100%', // Add this line
+                            width: '100%',
                             "&:hover": { transform: "translateY(-5px)", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" },
                           }}
                         >
@@ -939,7 +944,7 @@ const ServiceDetails = () => {
       </Dialog>
 
       {/* Booking Dialog */}
-      <Dialog
+      {/* <Dialog
         open={isBookingModalOpen}
         onClose={handleCloseBooking}
         maxWidth="sm"
@@ -959,7 +964,7 @@ const ServiceDetails = () => {
         >
           Confirm Booking: {service?.name || "Service"}
         </DialogTitle>
-        <DialogContent sx={{ pt: 5, pb: 2, bgcolor: "#F9FAFB" }}>
+        <DialogContent sx={{ pt: 5, pb: 2, bgcolor: "#F9FAFB",}}>
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
             <Step>
               <StepLabel>Confirm Details</StepLabel>
@@ -980,7 +985,7 @@ const ServiceDetails = () => {
             <Box>
               <Typography
                 variant="h6"
-                sx={{ color: "#1F2937", mb: 2, fontSize: "1.1rem" }}
+                sx={{ color: "#1F2937", mb: 2, fontSize: "1.1rem",class:"servicedetails" }}
               >
                 Your Details
               </Typography>
@@ -1170,7 +1175,161 @@ const ServiceDetails = () => {
             </Button>
           )}
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
+
+<Dialog
+      open={isBookingModalOpen}
+      onClose={handleCloseBooking}
+      maxWidth="sm"
+      fullWidth
+      sx={{
+        "& .MuiDialog-paper": {
+          borderRadius: 4,
+          // This ensures the dialog itself can contain the fixed and scrolling parts
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '90vh', // Prevent dialog from being taller than the screen
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          bgcolor: "#4F46E5",
+          color: "white",
+          py: 2,
+          px: 3,
+          textAlign: "center",
+        }}
+      >
+        Confirm Booking: {service?.name || "Service"}
+      </DialogTitle>
+
+      {/* STEP 1: Remove padding from DialogContent. It will only serve as a container.
+        We add flex properties to ensure it grows and shrinks properly.
+      */}
+      <DialogContent sx={{ p: 0, bgcolor: "#F9FAFB", flex: '1 1 auto', overflow: 'hidden' }}>
+        
+        {/* The Stepper stays outside the scrollable area so it's always visible. */}
+        <Stepper activeStep={activeStep} sx={{ p: 3, pb: 2 }}>
+          <Step>
+            <StepLabel>Confirm Details</StepLabel>
+          </Step>
+          <Step>
+            <StepLabel>Payment</StepLabel>
+          </Step>
+          <Step>
+            <StepLabel>Confirmed</StepLabel>
+          </Step>
+        </Stepper>
+
+        {/* STEP 2: Create a new <Box> to be the scrollable container.
+          - overflowY: 'auto' -> shows scrollbar only when needed.
+          - p: 3 -> adds padding INSIDE the scrollable area.
+          - This Box now holds ALL the content that might get too long.
+        */}
+        <Box sx={{ overflowY: 'auto', p: 3, pt: 0 }}>
+          {bookingError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {bookingError}
+            </Alert>
+          )}
+
+          {activeStep === 0 && (
+            <Box>
+              <Typography variant="h6" sx={{ color: "#1F2937", mb: 2, fontSize: "1.1rem" }}>
+                Your Details
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                <Typography sx={{ mb: 1, fontSize: "0.9rem" }}>
+                  <strong>Service:</strong> {service?.name || "N/A"}
+                </Typography>
+                <Typography sx={{ mb: 1, fontSize: "0.9rem" }}>
+                  <strong>Price:</strong> ₹{service?.price?.toLocaleString("en-IN") || "0"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                <Typography sx={{ mb: 1, fontSize: "0.9rem" }}>
+                  <strong>Name:</strong> {user?.name || "N/A"}
+                </Typography>
+                <Typography sx={{ mb: 1, fontSize: "0.9rem" }}>
+                  <strong>Email:</strong> {user?.email || "N/A"}
+                </Typography>
+                {user?.phone ? (
+                  <Typography sx={{ mb: 1, fontSize: "0.9rem" }}>
+                    <strong>Phone:</strong> {user.phone}
+                  </Typography>
+                ) : (
+                  <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => navigate("/profile")}>UPDATE PROFILE</Button>}>
+                    <AlertTitle>Phone Number Required</AlertTitle>
+                    Please add a phone number to your profile to continue.
+                  </Alert>
+                )}
+                <TextField label="Service Location" value={bookingData.location} onChange={(e) => setBookingData({ ...bookingData, location: e.target.value })} fullWidth margin="normal" sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "white" }, "& .MuiInputLabel-root": { fontSize: "0.9rem" } }} />
+              </Paper>
+              <Typography variant="h6" sx={{ color: "#1F2937", mb: 1, fontSize: "1.1rem" }}>
+                Select Payment Method
+              </Typography>
+              <RadioGroup row value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} sx={{ justifyContent: "center" }}>
+                <FormControlLabel value="Stripe" control={<Radio sx={{ color: "#4F46E5", "&.Mui-checked": { color: "#4F46E5" } }} />} label={<Typography sx={{ fontSize: "0.9rem" }}>Pay with Card</Typography>} />
+                <FormControlLabel value="COD" control={<Radio sx={{ color: "#4F46E5", "&.Mui-checked": { color: "#4F46E5" } }} />} label={<Typography sx={{ fontSize: "0.9rem" }}>Cash on Delivery</Typography>} />
+              </RadioGroup>
+            </Box>
+          )}
+
+          {activeStep === 1 && (
+            <Box>
+              <Typography variant="h6" sx={{ color: "#1F2937", mb: 2, fontSize: "1.1rem" }}>
+                Complete Your Payment
+              </Typography>
+              <Typography sx={{ color: "#6B7280", mb: 2, fontSize: "0.9rem" }}>
+                Enter your payment details to confirm the booking.
+              </Typography>
+              {clientSecret && stripePromise && (
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <CheckoutForm onPaymentSuccess={() => setActiveStep(2)} onPaymentError={(errorMsg) => setBookingError(errorMsg)} />
+                </Elements>
+              )}
+            </Box>
+          )}
+
+          {activeStep === 2 && (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <CheckCircleIcon color="success" sx={{ fontSize: 60 }} />
+              <Typography variant="h5" sx={{ mt: 2, color: "#1F2937", fontSize: "1.25rem" }}>
+                Booking Confirmed!
+              </Typography>
+              <Typography sx={{ color: "#6B7280", fontSize: "0.9rem" }}>
+                We have received your request and will assign a provider shortly.
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      
+      {/* The DialogActions are also outside the scrollable area and will remain fixed. */}
+      <DialogActions sx={{ p: 2, justifyContent: 'center', bgcolor: "#F9FAFB", borderTop: '1px solid #E5E7EB' }}>
+        {activeStep < 2 ? (
+          <Button onClick={handleCloseBooking} sx={{ color: "#4F46E5" }}>Cancel</Button>
+        ) : null}
+        
+        {activeStep === 1 && (
+          <Button onClick={() => setActiveStep(0)} sx={{ color: "#4F46E5" }}>Back</Button>
+        )}
+        
+        {activeStep === 0 && (
+          <Button variant="contained" onClick={handleCreateBookingAndProceed} disabled={bookingLoading || !user?.phone} sx={{ bgcolor: "#4F46E5", "&:hover": { bgcolor: "#4338CA" } }}>
+            {bookingLoading ? <CircularProgress size={24} color="inherit" /> : paymentMethod === "Stripe" ? "Proceed to Payment" : "Confirm Booking"}
+          </Button>
+        )}
+        
+        {activeStep === 2 && (
+          <Button variant="contained" onClick={() => { handleCloseBooking(); navigate("/profile"); }} sx={{ bgcolor: "#4F46E5", "&:hover": { bgcolor: "#4338CA" } }}>
+            View My Bookings
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+
     </>
   );
 };

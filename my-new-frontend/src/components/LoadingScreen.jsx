@@ -59,20 +59,19 @@ const LoadingScreen = ({ title, message }) => {
 
   return (
     <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        // A subtle, premium light gradient background
-        background: 'radial-gradient(circle, #ffffff 0%, #f4f7f9 100%)',
-      }}
-    >
+  sx={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    zIndex: 9999, // Ensures it's on top of all other content
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: 'radial-gradient(circle, #ffffff 0%, #f4f7f9 100%)',
+  }}
+>
       <Box 
         sx={{ 
           display: 'flex', 
@@ -84,12 +83,11 @@ const LoadingScreen = ({ title, message }) => {
         <Box
           sx={{
             position: 'relative',
-            width: { xs: 180, sm: 200, md: 220 }, // Increased size
+            width: { xs: 180, sm: 200, md: 220 },
             height: { xs: 180, sm: 200, md: 220 },
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            // Add the continuous breathing animation after the initial reveal
             animation: `${breath} 4s infinite ease-in-out`,
             animationDelay: '2s',
           }}
@@ -104,11 +102,11 @@ const LoadingScreen = ({ title, message }) => {
                 left: '50%',
                 width: '12px',
                 height: '12px',
-                bgcolor: '#4F46E5', // Your primary brand color
+                bgcolor: '#4F46E5',
                 borderRadius: '50%',
-                animation: `${orbit} 1.8s forwards`, // 'forwards' stops it at the end
+                animation: `${orbit} 1.8s forwards`,
                 animationDelay: `${delay}s`,
-                opacity: 0, // Start hidden, animation will make it visible
+                opacity: 0,
               }}
             />
           ))}
@@ -123,17 +121,16 @@ const LoadingScreen = ({ title, message }) => {
               height: '100%',
               objectFit: 'contain',
               borderRadius: '50%',
-              boxShadow: '0 15px 40px rgba(79, 70, 229, 0.15)', // Softer, branded shadow
-              // Animation is delayed to start as the orbs converge
+              boxShadow: '0 15px 40px rgba(79, 70, 229, 0.15)',
               animation: `${reveal} 0.8s 1.2s cubic-bezier(0.165, 0.84, 0.44, 1) forwards`,
-              opacity: 0, // Start hidden
+              opacity: 0,
             }}
           />
         </Box>
 
         <Box sx={{
           animation: `${fadeInText} 0.8s 1.8s ease-out forwards`,
-          opacity: 0, // Start hidden
+          opacity: 0,
           textAlign: 'center',
         }}>
           <Typography

@@ -109,6 +109,7 @@ const HeroSection = ({ handleNavigation }) => (
   </Box>
 );
 
+
 const ServiceMarquee = () => {
   const extendedServices = [...scrollingServices, ...scrollingServices];
   return (
@@ -116,9 +117,17 @@ const ServiceMarquee = () => {
       <Box sx={{ overflow: 'hidden' }}>
         <Box className="marquee-content" sx={{ display: 'flex', animation: 'marquee 30s linear infinite' }}>
           {extendedServices.map((service, index) => (
-            <Box key={index} sx={{ textAlign: 'center', mx: 4, minWidth: 150 }}>
-              <img src={service.image} alt={service.name} style={{ height: '48px' }} />
-              <Typography sx={{ fontWeight: 'medium', color: 'text.secondary', mt: 1 }}>{service.name}</Typography>
+            <Box key={index} sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              mx: 4,
+              minWidth: 150
+            }}>
+              <img src={service.image} alt={service.name} style={{ height: '48px', marginBottom: '8px' }} />
+              <Typography sx={{ fontWeight: 'medium', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                {service.name}
+              </Typography>
             </Box>
           ))}
         </Box>
@@ -126,6 +135,7 @@ const ServiceMarquee = () => {
     </Box>
   );
 };
+
 
 const AdvantageSection = () => {
   const items = [
@@ -142,20 +152,21 @@ const AdvantageSection = () => {
         <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 5, textAlign: 'center' }}>
           THE SERVICEHUB ADVANTAGE
         </Typography>
-        <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3 }}>
-          <Stack direction="row" divider={<Divider orientation="vertical" flexItem />} justifyContent="space-around" sx={{ flexWrap: 'wrap', py: 3 }}>
-            {items.map(item => (
-              <Box key={item.text} sx={{ textAlign: 'center', p: 2, minWidth: 160 }}>
-                <Box sx={{ fontSize: 40, mb: 1 }}>{item.icon}</Box>
-                <Typography variant="body2" sx={{ fontWeight: '600' }}>{item.text}</Typography>
+        <Grid container spacing={{ xs: 2, md: 0 }} justifyContent="center">
+          {items.map(item => (
+            <Grid item xs={4} sm={4} md={2} key={item.text}>
+              <Box sx={{ textAlign: 'center', p: { xs: 1, sm: 2 } }}>
+                <Box sx={{ fontSize: 40, mb: 1, color: 'primary.main' }}>{item.icon}</Box>
+                <Typography variant="body2" sx={{ fontWeight: '600', fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>{item.text}</Typography>
               </Box>
-            ))}
-          </Stack>
-        </Paper>
+            </Grid>
+          ))}
+        </Grid>
       </Container>
     </Box>
   );
 };
+
 
 const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory }) => (
   <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: '#F9FAFB' }}>
@@ -187,7 +198,7 @@ const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selecte
       </Box>
       <Grid container spacing={2} justifyContent="center">
         {categories.map((cat) => (
-          <Grid item xs={6} sm={4} md={1.5} key={cat.name}>
+          <Grid item xs={3} sm={4} md={1.5} key={cat.name}>
             <Paper
               elevation={0}
               sx={{
@@ -198,12 +209,13 @@ const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selecte
                 transition: 'all 0.2s ease-in-out',
                 cursor: 'pointer',
                 bgcolor: selectedCategory === cat.name ? 'primary.lighter' : 'white',
+                height: '100%',
               }}
               onClick={() => setSelectedCategory(prev => prev === cat.name ? '' : cat.name)}
             >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, color: selectedCategory === cat.name ? 'primary.main' : 'text.primary' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, height: '100%', color: selectedCategory === cat.name ? 'primary.main' : 'text.primary' }}>
                 {cat.icon}
-                <Typography sx={{ fontWeight: 'medium', mt: 1, textAlign: 'center' }}>{cat.name}</Typography>
+                <Typography sx={{ fontWeight: 'medium', mt: 1, textAlign: 'center', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{cat.name}</Typography>
               </Box>
             </Paper>
           </Grid>
@@ -243,6 +255,11 @@ const FeaturedServicesSection = ({ featuredServices, getImageUrl, handleNavigati
   </Box>
 );
 
+// =================================================================================
+// REVISION 3: HASSLE-FREE BOOKING FLOW (IPAD ALIGNMENT)
+// Adjusted the responsive spacing on the Grid container. Reducing the gap on
+// tablet ('sm') screens prevents the third item from wrapping to a new line.
+// =================================================================================
 const HowItWorksSection = () => {
   const steps = [
     { icon: <EventAvailableIcon sx={{ fontSize: 40 }} />, title: "1. Pick Your Service & Time" },
@@ -255,10 +272,11 @@ const HowItWorksSection = () => {
         <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 8 }}>
           Your Hassle-Free Booking Flow
         </Typography>
-        <Grid container spacing={4} alignItems="stretch">
+        {/* --- CHANGE HERE --- */}
+        <Grid container spacing={{ xs: 4, sm: 3, md: 4 }} alignItems="center" justifyContent="center">
           {steps.map((step, index) => (
             <React.Fragment key={step.title}>
-              <Grid item xs={12} md={index === 1 ? 4 : 3.5}>
+              <Grid item xs={12} sm={4} md={index === 1 ? 4 : 3.5}>
                 <Paper elevation={6} sx={{ p: 4, textAlign: 'center', borderRadius: 4, height: '100%' }}>
                   <Box sx={{ color: 'primary.main', mb: 2 }}>{step.icon}</Box>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{step.title}</Typography>
@@ -276,6 +294,7 @@ const HowItWorksSection = () => {
     </Box>
   );
 };
+
 
 const GuaranteesSection = () => {
   const guarantees = [
@@ -318,7 +337,7 @@ const FeedbackSection = ({ feedbacks, getImageUrl }) => (
               <Paper elevation={6} sx={{ p: 4, borderRadius: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Avatar
-                    src={getImageUrl(feedback.bookingId?.customer?.profile?.image)} // <-- UPDATED
+                    src={getImageUrl(feedback.bookingId?.customer?.profile?.image)} 
                     alt={feedback.bookingId?.customer?.name || 'Anonymous'}
                     sx={{ width: 56, height: 56, mr: 2 }}
                     onError={(e) => {
@@ -522,40 +541,42 @@ const Home = () => {
 
   const handleNavigation = (path) => navigate(path);
   const filteredServices = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory ? s.category === selectedCategory : true));
-  const getImageUrl = (image) => image || 'https://via.placeholder.com/400?text=No+Image'; // <-- UPDATED
+  const getImageUrl = (image) => image || 'https://via.placeholder.com/400?text=No+Image'; 
 
   if (loading || feedbackLoading) {
-   /*  return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>  
-      
-    ); */
-
     return <LoadingScreen />;
   }
 
   if (message.open || errorMessage) {
     return (
-      <Box sx={{ 
-  maxWidth: '1200px', // Sets a max-width for large screens
-  mx: 'auto',         // Horizontally centers the box
-  p: 4,               // Keeps your existing padding
-  mt: '70px'          // Adds 70px margin to the top
-}}>
-  <Alert severity="error">{message.open ? message.text : errorMessage}</Alert>
-</Box>
+      <Box sx={{
+        maxWidth: '1200px', 
+        mx: 'auto',       
+        p: 4,             
+        mt: '70px'        
+      }}>
+        <Alert severity="error">{message.open ? message.text : errorMessage}</Alert>
+      </Box>
     );
   }
 
   return (
-    <Box sx={{ bgcolor: '#F9FAFB', pt: 10 }}>
+<Box sx={{
+  bgcolor: '#F9FAFB',
+  // Define all responsive padding-top values in ONE object for clarity
+  pt: {
+    xs: -1.5,  // 32px padding for mobile
+    sm: -1.0,  // 40px padding for large phones/small tablets
+    md: 1,  // 48px padding for tablets
+    lg: 10   // 64px padding for desktops
+  }
+}}>
       <Box sx={{ zIndex: 1100, bgcolor: '#4F46E5', color: 'white', py: 1.5, overflow: 'hidden' }}>
         <Box className="marquee-content" sx={{ display: 'flex', animation: 'marquee 20s linear infinite' }}>
           {[...announcements, ...announcements].map((ann, i) => (
             <Typography key={i} sx={{ mx: 4, whiteSpace: 'nowrap' }}>{ann}</Typography>
           ))}
-        </Box>
+        </Box> 
       </Box>
       <main>
         <HeroSection handleNavigation={handleNavigation} />

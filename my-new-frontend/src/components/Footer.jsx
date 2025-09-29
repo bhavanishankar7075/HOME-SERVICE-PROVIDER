@@ -12,17 +12,16 @@ import io from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// --- BLACK THEME ---
 const blackTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#03a9f4', // Vibrant light blue for accents
+      main: '#03a9f4',
       dark: '#0276aa',
     },
     background: {
       default: '#000000',
-      paper: 'linear-gradient(180deg, #1C1C1E 0%, #121212 100%)', // Subtle gradient
+      paper: 'linear-gradient(180deg, #1C1C1E 0%, #121212 100%)',
     },
     text: {
       primary: '#ffffff',
@@ -38,7 +37,6 @@ const blackTheme = createTheme({
   },
 });
 
-// --- Data Constants ---
 const QUICK_LINKS = [
   { path: '/services', label: 'Services' },
   { path: '/contact', label: 'Contact Us' },
@@ -59,7 +57,6 @@ const FooterComponent = () => {
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
   const [emailError, setEmailError] = useState('');
 
-  // All your logic (useEffect, handlers) remains unchanged
   useEffect(() => {
     const socket = io(API_URL, { reconnection: true });
     socket.on('connect', () => console.log('Footer socket connected'));
@@ -97,7 +94,12 @@ const FooterComponent = () => {
     <Box
       component="footer"
       sx={{
-        background: blackTheme.palette.background.paper, // Apply gradient from theme
+        // NOTE ON FLICKERING: For `mt: 'auto'` to work correctly and prevent the footer
+        // from appearing at the top on load, the parent container of this footer 
+        // (likely in your App.jsx) should have a style of:
+        // { display: 'flex', flexDirection: 'column', minHeight: '100vh' }
+        // The main content area should have `flexGrow: 1`.
+        background: blackTheme.palette.background.paper,
         color: 'text.secondary',
         py: { xs: 5, sm: 8 },
         px: { xs: 2, sm: 4 },
@@ -140,7 +142,12 @@ const FooterComponent = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={6} sm={4} md={2}>
+        {/* =================================================================================
+          * DESIGN FIX: IPAD LAYOUT
+          * Adjusted grid columns for tablet screens (`sm`) to give more space
+          * to the "Contact Us" section and prevent content overlap.
+          * ================================================================================= */}
+        <Grid item xs={6} sm={3} md={2}>
           <Typography variant="h6" color="text.primary" gutterBottom>
             Navigate
           </Typography>
@@ -163,14 +170,15 @@ const FooterComponent = () => {
           </Stack>
         </Grid>
 
-        <Grid item xs={12} sm={4} md={3}>
+        <Grid item xs={12} sm={5} md={3}>
           <Typography variant="h6" color="text.primary" gutterBottom>
             Contact Us
           </Typography>
           <Stack spacing={2}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <EmailIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
-              <Link href="mailto:support@homeserviceprovider.com" color="inherit" underline="none">
+              {/* DESIGN FIX: Added wordBreak to prevent long emails from overflowing */}
+              <Link href="mailto:support@homeserviceprovider.com" color="inherit" underline="none" sx={{ wordBreak: 'break-all' }}>
                 support@homeserviceprovider.com
               </Link>
             </Box>
@@ -193,7 +201,6 @@ const FooterComponent = () => {
             Get the latest offers and tips directly in your inbox.
           </Typography>
           <Box component="form" onSubmit={handleNewsletterSubmit}>
-            {/* --- UPDATED NEWSLETTER FORM --- */}
             <Stack direction="row">
               <TextField
                 placeholder="Your Email"
@@ -223,7 +230,7 @@ const FooterComponent = () => {
                   borderTopLeftRadius: 0, 
                   borderBottomLeftRadius: 0, 
                   boxShadow: 'none',
-                  px: 3, // Add padding for the text
+                  px: 3,
                 }}
               >
                 Subscribe
@@ -259,7 +266,6 @@ const FooterComponent = () => {
   );
 };
 
-// EXPORT THE COMPONENT WRAPPED IN THE THEME PROVIDER
 const Footer = () => {
     return (
         <ThemeProvider theme={blackTheme}>

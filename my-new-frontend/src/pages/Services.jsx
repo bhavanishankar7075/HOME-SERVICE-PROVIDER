@@ -11,7 +11,7 @@ import {
   Box, Typography, Grid, Card, CardMedia, CardContent, Button, CircularProgress, Slider,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem,
   Paper, Avatar, CardActions, Tooltip, Snackbar, Alert, Rating, Container,
-  Chip, GlobalStyles, Stepper, Step, StepLabel, RadioGroup, FormControlLabel, Radio, FormLabel
+  Chip, GlobalStyles, Stepper, Step, StepLabel, RadioGroup, FormControlLabel, Radio, FormLabel, Skeleton
 } from "@mui/material";
 import {
   FilterList as FilterIcon, RestartAlt as ClearIcon, CalendarMonth as ScheduleIcon, Info as InfoIcon,
@@ -27,6 +27,44 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const socket = io(API_URL);
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
+
+// =================================================================================
+// DESIGN FIX 3: IMAGE SKELETON LOADER
+// This new component shows a skeleton animation while the image is loading,
+// improving the user experience.
+// =================================================================================
+const ImageWithSkeleton = ({ src, alt, height }) => {
+    const [loading, setLoading] = useState(true);
+  
+    return (
+      <Box sx={{ height: height, width: '100%', position: 'relative' }}>
+        {loading && (
+          <Skeleton 
+            variant="rectangular" 
+            width="100%" 
+            height={height} 
+            sx={{ position: 'absolute', top: 0, left: 0 }}
+          />
+        )}
+        <CardMedia
+          component="img"
+          height={height}
+          image={src}
+          alt={alt}
+          onLoad={() => setLoading(false)}
+          onError={(e) => {
+            setLoading(false);
+            e.target.src = `https://via.placeholder.com/400x${height}?text=Image+Not+Found`;
+          }}
+          sx={{ 
+            objectFit: 'cover', 
+            opacity: loading ? 0 : 1, 
+            transition: 'opacity 0.3s ease-in-out' 
+          }}
+        />
+      </Box>
+    );
+};
 
 const categoryIcons = {
   "Cleaning": <CleaningIcon sx={{ color: '#4F46E5' }} />,
@@ -227,7 +265,7 @@ const Services = () => {
         scheduledTime,
         location: scheduleData.location,
         paymentMethod,
-         timeSlot: scheduleData.time,
+          timeSlot: scheduleData.time,
       };
       const bookingRes = await axios.post(`${API_URL}/api/bookings`, bookingPayload, {
         headers: { Authorization: `Bearer ${token}` }
@@ -258,7 +296,7 @@ const Services = () => {
     setIsQuickViewOpen(true);
   };
 
-  const getImageUrl = (image) => image || 'https://via.placeholder.com/300x200?text=Service+Image'; // <-- UPDATED
+  const getImageUrl = (image) => image || 'https://via.placeholder.com/300x200?text=Service+Image';
 
   const categories = [
     { name: 'Home Maintenance', icon: <HomeIcon sx={{ color: '#4F46E5' }} /> },
@@ -277,18 +315,9 @@ const Services = () => {
     { title: '24/7 Support', description: 'Our team is here to assist you anytime.', icon: <SupportIcon sx={{ color: '#4F46E5' }} /> },
   ];
 
- /*  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#F9FAFB' }}>
-        <CircularProgress size={60} sx={{ color: '#4F46E5' }} />
-        <Typography variant="h6" sx={{ ml: 2, color: '#4B5563' }}>Loading Services...</Typography>
-      </Box>
-    );
-  } */
-
-    if (loading) {
-  return <LoadingScreen title="Our Services" message="Finding the best options for you..." />;
-}
+  if (loading) {
+    return <LoadingScreen title="Our Services" message="Finding the best options for you..." />;
+  }
 
   const proceedButtonText = paymentMethod === 'Stripe' ? 'Proceed to Payment' : 'Confirm COD Booking';
 
@@ -296,32 +325,35 @@ const Services = () => {
     <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', pt: 8 }}>
       {scrollbarStyles}
       <Box component="main" sx={{ flexGrow: 1, px: { xs: 2, sm: 4, lg: 6 }, py: 6 }}>
-        {/* Popular Categories Section */}
+        {/* =================================================================================
+          * DESIGN FIX 2: SERVICE CATEGORY 2x2 GRID
+          * Replaced Chips with styled Paper components for a better look.
+          * Used .slice(0, 4) to display only the first four categories, creating a 2x2 grid.
+          * ================================================================================= */}
         <Box component="section" sx={{ py: 4, bgcolor: 'white', borderRadius: 4, boxShadow: 2, mb: 6 }}>
           <Container maxWidth="lg">
             <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, fontWeight: 'bold', textAlign: 'center', color: '#1F2937', mb: 4 }}>
               Service Categories
             </Typography>
-            <Grid container spacing={2} justifyContent="center">
-              {categories.map((category, index) => (
-                <Grid item xs={6} sm={4} md={2} key={index}>
-                  <Chip
-                    icon={category.icon}
-                    label={category.name}
+            <Grid container spacing={3} justifyContent="center">
+              {categories.slice(0, 4).map((category) => (
+                <Grid item xs={12} sm={3} md={3}  key={category.name} sx={{ display: 'flex' }}>
+                  <Paper
+                    elevation={2}
                     onClick={() => setFilters(prev => ({ ...prev, category: category.name === filters.category ? 'all' : category.name }))}
                     sx={{
-                      bgcolor: filters.category === category.name ? '#4F46E5' : '#EFF6FF',
-                      color: filters.category === category.name ? 'white' : '#1F2937',
-                      fontWeight: 'medium',
-                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      px: 1,
-                      py: 2,
-                      borderRadius: 2,
-                      '&:hover': { bgcolor: filters.category === category.name ? '#4338CA' : '#DBEAFE', cursor: 'pointer' },
-                      width: '100%',
-                      justifyContent: 'flex-start',
+                      p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, height: '100%',width:'100%', cursor: 'pointer', borderRadius: 3,
+                      border: '2px solid', borderColor: filters.category === category.name ? '#4F46E5' : 'transparent', bgcolor: filters.category === category.name ? '#EEF2FF' : 'white',
+                      transition: 'all 0.2s ease-in-out', '&:hover': { transform: 'translateY(-5px)', boxShadow: 6 }
                     }}
-                  />
+                  >
+                    <Avatar sx={{ bgcolor: filters.category === category.name ? '#4F46E5' : '#E0E7FF', color: filters.category === category.name ? 'white' : '#4F46E5', mb: 1 }}>
+                        {category.icon}
+                    </Avatar>
+                    <Typography sx={{ fontWeight: 'medium', color: 'text.primary', textAlign: 'center' }}>
+                      {category.name}
+                    </Typography>
+                  </Paper>
                 </Grid>
               ))}
             </Grid>
@@ -340,41 +372,21 @@ const Services = () => {
               </Box>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Search Services"
-                    variant="outlined"
-                    size="small"
-                    value={filters.searchTerm}
-                    onChange={e => setFilters(p => ({ ...p, searchTerm: e.target.value }))}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'white' } }}
-                  />
+                  <TextField fullWidth label="Search Services" variant="outlined" size="small" value={filters.searchTerm} onChange={e => setFilters(p => ({ ...p, searchTerm: e.target.value }))} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'white' } }} />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Category</InputLabel>
-                    <Select
-                      value={filters.category}
-                      label="Category"
-                      onChange={e => setFilters(p => ({ ...p, category: e.target.value }))}
-                      sx={{ borderRadius: 2, bgcolor: 'white' }}
-                    >
+                    <Select value={filters.category} label="Category" onChange={e => setFilters(p => ({ ...p, category: e.target.value }))} sx={{ borderRadius: 2, bgcolor: 'white' }}>
                       <MenuItem value="all">All Categories</MenuItem>
-                      {categories.map(cat => (
-                        <MenuItem key={cat.name} value={cat.name}>{cat.name}</MenuItem>
-                      ))}
+                      {categories.map(cat => (<MenuItem key={cat.name} value={cat.name}>{cat.name}</MenuItem>))}
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Sort By</InputLabel>
-                    <Select
-                      value={filters.sort}
-                      label="Sort By"
-                      onChange={e => setFilters(p => ({ ...p, sort: e.target.value }))}
-                      sx={{ borderRadius: 2, bgcolor: 'white' }}
-                    >
+                    <Select value={filters.sort} label="Sort By" onChange={e => setFilters(p => ({ ...p, sort: e.target.value }))} sx={{ borderRadius: 2, bgcolor: 'white' }}>
                       <MenuItem value="name_asc">Name (A-Z)</MenuItem>
                       <MenuItem value="price_asc">Price: Low to High</MenuItem>
                       <MenuItem value="price_desc">Price: High to Low</MenuItem>
@@ -383,13 +395,7 @@ const Services = () => {
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<ClearIcon />}
-                    onClick={() => setFilters({ category: "all", priceRange: [0, 50000], searchTerm: "", sort: "name_asc" })}
-                    sx={{ borderColor: '#4F46E5', color: '#4F46E5', bgcolor: 'white', '&:hover': { bgcolor: '#EFF6FF' }, borderRadius: 2 }}
-                  >
+                  <Button fullWidth variant="outlined" startIcon={<ClearIcon />} onClick={() => setFilters({ category: "all", priceRange: [0, 50000], searchTerm: "", sort: "name_asc" })} sx={{ borderColor: '#4F46E5', color: '#4F46E5', bgcolor: 'white', '&:hover': { bgcolor: '#EFF6FF' }, borderRadius: 2 }}>
                     Reset Filters
                   </Button>
                 </Grid>
@@ -397,15 +403,7 @@ const Services = () => {
                   <Typography gutterBottom sx={{ fontSize: '0.9rem', color: '#1F2937' }}>
                     Price Range (₹{filters.priceRange[0].toLocaleString('en-IN')} - ₹{filters.priceRange[1].toLocaleString('en-IN')})
                   </Typography>
-                  <Slider
-                    value={filters.priceRange}
-                    onChange={(e, val) => setFilters(p => ({ ...p, priceRange: val }))}
-                    valueLabelDisplay="auto"
-                    min={0}
-                    max={50000}
-                    step={500}
-                    sx={{ color: '#4F46E5' }}
-                  />
+                  <Slider value={filters.priceRange} onChange={(e, val) => setFilters(p => ({ ...p, priceRange: val }))} valueLabelDisplay="auto" min={0} max={50000} step={500} sx={{ color: '#4F46E5' }} />
                 </Grid>
               </Grid>
             </Paper>
@@ -422,17 +420,7 @@ const Services = () => {
               {filteredAndSortedServices.length > 0 ? filteredAndSortedServices.slice(0, 6).map(service => (
                 <Grid item xs={12} sm={6} md={4} key={service._id}>
                   <Card sx={{ height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', borderRadius: 4, boxShadow: 3, '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' }, transition: 'all 0.3s' }}>
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={getImageUrl(service.image)}
-                      alt={service.name}
-                      sx={{ objectFit: 'cover', bgcolor: '#F9FAFB' }}
-                      onError={(e) => {
-                        console.error(`Image load error for ${service.name}:`, e.target.src);
-                        e.target.src = 'https://via.placeholder.com/300x200?text=Service+Image';
-                      }}
-                    />
+                    <ImageWithSkeleton src={getImageUrl(service.image)} alt={service.name} height="200" />
                     <CardContent sx={{ flexGrow: 1, p: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium', color: '#1F2937' }}>
@@ -453,24 +441,17 @@ const Services = () => {
                         {service.description.substring(0, 80)}{service.description.length > 80 && '...'}
                       </Typography>
                     </CardContent>
-                    <CardActions sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#F9FAFB' }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button size="small" startIcon={<InfoIcon />} onClick={() => navigate(`/services/${service._id}`)} sx={{ color: '#4F46E5', fontSize: '0.8rem' }}>
-                          Details
+                    <CardActions sx={{ 
+                        p: 2, flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'space-between', 
+                        gap: { xs: 1.5, sm: 1 }, width: '100%', bgcolor: '#F9FAFB' 
+                    }}>
+                        <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                            <Button fullWidth sx={{ width: { xs: '100%', sm: 'auto' }, color: '#4F46E5', fontSize: '0.8rem' }} size="small" startIcon={<InfoIcon />} onClick={() => navigate(`/services/${service._id}`)}>Details</Button>
+                            <Button fullWidth sx={{ width: { xs: '100%', sm: 'auto' }, color: '#4F46E5', fontSize: '0.8rem' }} size="small" startIcon={<VisibilityIcon />} onClick={() => handleQuickView(service)}>Quick View</Button>
+                        </Box>
+                        <Button fullWidth variant="contained" size="small" startIcon={<ScheduleIcon />} onClick={() => handleOpenSchedule(service)} sx={{ bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' }, width: { xs: '100%', sm: 'auto' }, fontSize: '0.8rem' }}>
+                            Schedule
                         </Button>
-                        <Button size="small" startIcon={<VisibilityIcon />} onClick={() => handleQuickView(service)} sx={{ color: '#4F46E5', fontSize: '0.8rem' }}>
-                          Quick View
-                        </Button>
-                      </Box>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<ScheduleIcon />}
-                        onClick={() => handleOpenSchedule(service)}
-                        sx={{ bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' }, fontSize: '0.8rem' }}
-                      >
-                        Schedule
-                      </Button>
                     </CardActions>
                   </Card>
                 </Grid>
@@ -493,17 +474,7 @@ const Services = () => {
               {filteredAndSortedServices.length > 0 ? filteredAndSortedServices.map(service => (
                 <Grid item xs={12} sm={6} md={4} key={service._id}>
                   <Card sx={{ height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', borderRadius: 4, boxShadow: 3, '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' }, transition: 'all 0.3s' }}>
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={getImageUrl(service.image)}
-                      alt={service.name}
-                      sx={{ objectFit: 'cover', bgcolor: '#F9FAFB' }}
-                      onError={(e) => {
-                        console.error(`Image load error for ${service.name}:`, e.target.src);
-                        e.target.src = 'https://via.placeholder.com/300x200?text=Service+Image';
-                      }}
-                    />
+                    <ImageWithSkeleton src={getImageUrl(service.image)} alt={service.name} height="200" />
                     <CardContent sx={{ flexGrow: 1, p: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium', color: '#1F2937' }}>
@@ -524,24 +495,18 @@ const Services = () => {
                         {service.description.substring(0, 80)}{service.description.length > 80 && '...'}
                       </Typography>
                     </CardContent>
-                    <CardActions sx={{ p: 2, justifyContent: 'space-between', bgcolor: '#F9FAFB' }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button size="small" startIcon={<InfoIcon />} onClick={() => navigate(`/services/${service._id}`)} sx={{ color: '#4F46E5', fontSize: '0.8rem' }}>
-                          Details
+                    {/* DESIGN FIX 1 (APPLIED HERE AS WELL) */}
+                    <CardActions sx={{ 
+                        p: 2, flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'space-between', 
+                        gap: { xs: 1.5, sm: 1 }, width: '100%', bgcolor: '#F9FAFB' 
+                    }}>
+                        <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                            <Button fullWidth sx={{ width: { xs: '100%', sm: 'auto' }, color: '#4F46E5', fontSize: '0.8rem' }} size="small" startIcon={<InfoIcon />} onClick={() => navigate(`/services/${service._id}`)}>Details</Button>
+                            <Button fullWidth sx={{ width: { xs: '100%', sm: 'auto' }, color: '#4F46E5', fontSize: '0.8rem' }} size="small" startIcon={<VisibilityIcon />} onClick={() => handleQuickView(service)}>Quick View</Button>
+                        </Box>
+                        <Button fullWidth variant="contained" size="small" startIcon={<ScheduleIcon />} onClick={() => handleOpenSchedule(service)} sx={{ bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' }, width: { xs: '100%', sm: 'auto' }, fontSize: '0.8rem' }}>
+                            Schedule
                         </Button>
-                        <Button size="small" startIcon={<VisibilityIcon />} onClick={() => handleQuickView(service)} sx={{ color: '#4F46E5', fontSize: '0.8rem' }}>
-                          Quick View
-                        </Button>
-                      </Box>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<ScheduleIcon />}
-                        onClick={() => handleOpenSchedule(service)}
-                        sx={{ bgcolor: '#4F46E5', '&:hover': { bgcolor: '#4338CA' }, fontSize: '0.8rem' }}
-                      >
-                        Schedule
-                      </Button>
                     </CardActions>
                   </Card>
                 </Grid>

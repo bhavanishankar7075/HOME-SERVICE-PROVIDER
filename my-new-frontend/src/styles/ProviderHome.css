@@ -117,28 +117,15 @@
 
 
 @media screen and (max-width: 768px) {
-  body {
-    padding-top: 6rem; /* Adjusted for tablet navbar height */
-  }
-  .provider {
+ 
+  .providerhome {
     padding-bottom: 0.75rem; /* Reduced bottom padding for tablets */
   }
 }
 
 @media screen and (max-width: 639px) {
-  body {
-    padding-top: 4rem; /* Adjusted for mobile navbar height */
-  }
-  .provider {
-    padding-bottom: 0.5rem; /* Reduced bottom padding for mobile */
-  }
-}
-
-@media screen and (max-width: 1246px) {
-  body {
-    padding-top: 8rem; /* Adjusted for mobile navbar height */
-  }
-  .provider {
+ 
+  .providerhome {
     padding-bottom: 0.5rem; /* Reduced bottom padding for mobile */
   }
 }

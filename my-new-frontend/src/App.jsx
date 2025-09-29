@@ -39,8 +39,9 @@ import PricingPage from './pages/PricingPage';
 import { useSocketManager } from './hooks/useSocketManager';
 import LoadingScreen from './components/LoadingScreen';
 import ScrollToTop from './components/ScrollToTop';
-import { Box } from '@mui/material';
+import { Box, CssBaseline } from '@mui/material';
 
+// --- No changes to FooterWrapper ---
 const FooterWrapper = () => {
   const location = useLocation();
   const isAuthenticated = useSelector((state) => !!state.auth.token);
@@ -52,6 +53,7 @@ const FooterWrapper = () => {
   return <Footer />;
 };
 
+// --- No changes to AnimatedRoutes ---
 const AnimatedRoutes = () => {
   const location = useLocation();
   return (
@@ -80,37 +82,50 @@ const AnimatedRoutes = () => {
   );
 };
 
+// =================================================================================
+// DEFINITIVE FIX PART 1: A DEDICATED LAYOUT COMPONENT
+// This component establishes the page structure. It's always present,
+// and the changing pages (children) are rendered inside it.
+// =================================================================================
+const Layout = ({ children }) => {
+  const { loading: isServicesLoading } = useContext(ServicesContext);
+
+  return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
+      <Box component="main" sx={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </Box>
+      <FooterWrapper />
+      {!isServicesLoading && <ChatWidget />}
+    </Box>
+  );
+};
+
+// AppContent is now simpler. It decides whether to show the LoadingScreen
+// or the main Layout with the animated routes.
 const AppContent = () => {
   useTabSync();
   useSocketManager();
   
   const { loading: isServicesLoading } = useContext(ServicesContext);
 
+  if (isServicesLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <ChatProvider>
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
-        <Navbar />
-        <Box component="main" sx={{ flex: 1 }}>
-          {isServicesLoading ? (
-            <LoadingScreen />
-          ) : (
-            <>
-              <AnimatedRoutes />
-              <FooterWrapper />
-            </>
-          )}
-        </Box>
-        {!isServicesLoading && <ChatWidget />}
-      </Box>
-    </ChatProvider>
+    <Layout>
+      <AnimatedRoutes />
+    </Layout>
   );
 };
 
 function App() {
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
-      console.log('App.jsx: Store state changed:', store.getState());
-      console.log('App.jsx: localStorage persist:root:', localStorage.getItem('persist:root'));
+      // console.log('App.jsx: Store state changed:', store.getState());
+      // console.log('App.jsx: localStorage persist:root:', localStorage.getItem('persist:root'));
     });
     return () => unsubscribe();
   }, []);
@@ -122,20 +137,20 @@ function App() {
         persistor={persistor}
         onBeforeLift={() => console.log('App.jsx: PersistGate hydrating...')}
       >
-        {() => {
-          setTimeout(() => {
-            console.log('App.jsx: PersistGate hydrated, state:', store.getState());
-            console.log('App.jsx: localStorage persist:root:', localStorage.getItem('persist:root'));
-          }, 100);
-          return (
-            <ServicesProvider>
-              <Router>
-                <ScrollToTop />
-                <AppContent />
-              </Router>
-            </ServicesProvider>
-          );
-        }}
+        <ServicesProvider>
+          <ChatProvider>
+            <Router>
+              {/* =================================================================================
+                * DEFINITIVE FIX PART 2: CssBaseline
+                * This normalizes browser styles and is essential for consistent
+                * Material-UI layout behavior.
+                * ================================================================================= */}
+              <CssBaseline />
+              <ScrollToTop />
+              <AppContent />
+            </Router>
+          </ChatProvider>
+        </ServicesProvider>
       </PersistGate>
     </Provider>
   );
