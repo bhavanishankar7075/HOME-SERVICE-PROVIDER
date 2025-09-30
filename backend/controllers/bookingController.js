@@ -37,6 +37,17 @@ const bookingValidationSchema = Joi.object({
     }),
 });
 
+/* const calculateRevenue = async () => {
+  const result = await Booking.aggregate([
+    { $match: { status: 'completed' } },
+    { $group: { _id: null, total: { $sum: '$totalPrice' } } },
+  ]);
+  return result[0]?.total || 0;
+};
+ */
+
+
+
 const calculateRevenue = async () => {
   const result = await Booking.aggregate([
     { $match: { status: 'completed' } },
@@ -44,6 +55,47 @@ const calculateRevenue = async () => {
   ]);
   return result[0]?.total || 0;
 };
+
+const calculateMonthlyRevenue = async () => {
+  const result = await Booking.aggregate([
+    { $match: { status: 'completed' } },
+    {
+      $group: {
+        _id: { $month: '$scheduledTime' },
+        total: { $sum: '$totalPrice' },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        month: '$_id',
+        total: 1,
+      },
+    },
+  ]);
+
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  const monthlyRevenue = result.reduce((acc, curr) => {
+    acc[months[curr.month - 1]] = curr.total || 0;
+    return acc;
+  }, {});
+  return monthlyRevenue;
+};
+
+const getRevenueData = async (req, res) => {
+  try {
+    const totalRevenue = await calculateRevenue();
+    const monthlyRevenue = await calculateMonthlyRevenue();
+    res.json({ total: totalRevenue, monthly: monthlyRevenue });
+  } catch (error) {
+    console.error('Error fetching revenue data:', error);
+    res.status(500).json({ message: 'Error fetching revenue data', error: error.message });
+  }
+};
+
 
 const createBooking = asyncHandler(async (req, res) => {
    console.log("--- 1. ENTERED createBooking CONTROLLER ---");
@@ -1079,6 +1131,7 @@ module.exports = {
   findAvailableProviders,
   getServices,
   getMyBookings,
+
   getCustomerPreviousServices,
   getProviderPreviousWorks,
   getBookingById,
@@ -1090,4 +1143,6 @@ module.exports = {
   cancelBooking,
   getAllBookings,
   trackService,
+  calculateMonthlyRevenue,
+  getRevenueData,
 };

@@ -18,6 +18,7 @@ const {
   getCustomerPreviousServices,
   getProviderPreviousWorks,
   trackService,
+  calculateMonthlyRevenue,
 } = require('../controllers/bookingController');
 
 // Routes (relative paths)
