@@ -17,10 +17,10 @@ import io from 'socket.io-client';
 import { logout } from '../store/authSlice';
 import '../styles/AdminDashboard.css';
 import { Pie, Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement,LineController, BarController } from 'chart.js';
 import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 
-ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement);
+ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, LineElement, PointElement,LineController,BarController);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL, {
