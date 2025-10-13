@@ -409,7 +409,7 @@ const Navbar = () => {
             </Box>
           )}
 
-          <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+        {/*   <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             {navigationItems.map((item) => (
               <Button key={item.label} onClick={item.onClick ? item.onClick : () => navigate(item.href)} startIcon={item.icon} sx={{
                   textTransform: 'none', color: 'text.primary', fontWeight: 600, fontSize: '0.95rem', px: 2, py: 1, borderRadius: '8px', transition: 'all 0.2s',
@@ -418,7 +418,60 @@ const Navbar = () => {
                 {item.label}
               </Button>
             ))}
-          </Stack>
+          </Stack> */}
+
+
+
+          
+     <Stack
+      direction="row"
+      spacing={2}
+      sx={{
+        display: { xs: 'none', md: 'flex' },
+        alignItems: 'center',
+        justifyContent: { xs: 'flex-start', md: 'flex-start', lg: 'center', xl: 'center' },
+        px: { xs: 1, md: 2, lg: 40, xl: 35 }, // Adjusted padding for better alignment
+      }}
+    >
+      {navigationItems.map((item) => (
+        <Button
+          key={item.label}
+          onClick={item.onClick ? item.onClick : () => navigate(item.href)}
+          startIcon={item.icon}
+          sx={{
+            textTransform: 'none',
+            color: 'text.primary',
+            fontWeight: 600,
+            fontSize: '1rem',
+            px: { xs: 1.5, md: 2 },
+            py: 1,
+            borderRadius: '12px',
+            position: 'relative',
+            transition: 'color 0.3s ease, background-color 0.3s ease',
+            '&:hover': {
+              color: 'primary.main',
+              backgroundColor: 'action.hover',
+              '&::after': {
+                width: '100%',
+              },
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: 0,
+              left: '-8px', // Extend to account for padding and icon
+              right: '-8px', // Extend to account for padding and icon
+              width: 0,
+              height: '2px',
+              backgroundColor: 'primary.main',
+              transition: 'width 0.3s ease-in-out',
+            },
+          }}
+        >
+          {item.label}
+        </Button>
+      ))}
+    </Stack>
 
           <Box sx={{ flexGrow: { xs: 1, md: 0 } }} />
 
