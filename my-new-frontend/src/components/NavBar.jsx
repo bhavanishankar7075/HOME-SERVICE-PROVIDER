@@ -407,22 +407,7 @@ const Navbar = () => {
                 </Paper>
               )}
             </Box>
-          )}
-
-        {/*   <Stack direction="row" spacing={1} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            {navigationItems.map((item) => (
-              <Button key={item.label} onClick={item.onClick ? item.onClick : () => navigate(item.href)} startIcon={item.icon} sx={{
-                  textTransform: 'none', color: 'text.primary', fontWeight: 600, fontSize: '0.95rem', px: 2, py: 1, borderRadius: '8px', transition: 'all 0.2s',
-                  '&:hover': { color: 'primary.main', backgroundColor: 'action.hover' }
-              }}>
-                {item.label}
-              </Button>
-            ))}
-          </Stack> */}
-
-
-
-          
+          )}  
      <Stack
       direction="row"
       spacing={2}

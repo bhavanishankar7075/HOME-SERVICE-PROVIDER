@@ -82,11 +82,6 @@ const AnimatedRoutes = () => {
   );
 };
 
-// =================================================================================
-// DEFINITIVE FIX PART 1: A DEDICATED LAYOUT COMPONENT
-// This component establishes the page structure. It's always present,
-// and the changing pages (children) are rendered inside it.
-// =================================================================================
 const Layout = ({ children }) => {
   const { loading: isServicesLoading } = useContext(ServicesContext);
 
@@ -102,8 +97,6 @@ const Layout = ({ children }) => {
   );
 };
 
-// AppContent is now simpler. It decides whether to show the LoadingScreen
-// or the main Layout with the animated routes.
 const AppContent = () => {
   useTabSync();
   useSocketManager();
@@ -124,8 +117,6 @@ const AppContent = () => {
 function App() {
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
-      // console.log('App.jsx: Store state changed:', store.getState());
-      // console.log('App.jsx: localStorage persist:root:', localStorage.getItem('persist:root'));
     });
     return () => unsubscribe();
   }, []);
@@ -140,11 +131,6 @@ function App() {
         <ServicesProvider>
           <ChatProvider>
             <Router>
-              {/* =================================================================================
-                * DEFINITIVE FIX PART 2: CssBaseline
-                * This normalizes browser styles and is essential for consistent
-                * Material-UI layout behavior.
-                * ================================================================================= */}
               <CssBaseline />
               <ScrollToTop />
               <AppContent />
