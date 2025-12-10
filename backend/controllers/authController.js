@@ -8,6 +8,819 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// Helper: standardize error response in catch blocks
+const sendErrorResponse = (res, err, defaultMessage = 'Internal Server Error') => {
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  console.error(defaultMessage, err.stack || err);
+  return res.status(statusCode).json({
+    message: err.message || defaultMessage,
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
+};
+
+const register = asyncHandler(async (req, res) => {
+  const { name, email, phone, password, role } = req.body;
+  console.log('Register request body:', req.body);
+
+  if (!name || !email || !password || !role) {
+    console.log('Missing required fields');
+    return res.status(400).json({ message: 'Please provide all required fields' });
+  }
+
+  if (!['customer', 'provider', 'admin'].includes(role)) {
+    console.log('Invalid role:', role);
+    return res.status(400).json({ message: 'Invalid role' });
+  }
+
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      console.log('User already exists:', email);
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      password,
+      role,
+      profile:
+        role === 'provider'
+          ? {
+              skills: [],
+              availability: 'Unavailable',
+              location: { fullAddress: '', details: {}, coordinates: {} },
+            }
+          : {},
+    });
+
+    console.log('User created:', user ? user._id : 'null');
+
+    if (!user) {
+      console.log('Failed to create user');
+      return res.status(400).json({ message: 'Failed to create user' });
+    }
+
+    // Generate and save OTP
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>ServiceHub OTP Verification</h2>
+        <p>Your one-time password (OTP) for registration is:</p>
+        <h3 style="color: #007bff;">${otp}</h3>
+        <p>This code expires in 10 minutes. Please enter it to complete your registration.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Best regards,<br>ServiceHub Team</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Your OTP for Registration Verification',
+        html,
+      });
+    } catch (emailErr) {
+      console.error('Error sending email:', emailErr.response?.body || emailErr);
+
+      // Optional: delete the created user so they can try again cleanly
+      try {
+        await User.findByIdAndDelete(user._id);
+        console.log('Deleted user due to email failure:', user._id);
+      } catch (cleanupErr) {
+        console.error('Error deleting user after email failure:', cleanupErr);
+      }
+
+      const sendGridMessage =
+        emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+      if (sendGridMessage.includes('Maximum credits exceeded')) {
+        return res.status(503).json({
+          message:
+            'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+        });
+      }
+
+      return res.status(502).json({
+        message: 'Email could not be sent. Please try again later.',
+      });
+    }
+
+    return res.status(201).json({
+      needsVerification: true,
+      message: 'OTP sent to your email',
+    });
+  } catch (err) {
+    if (err.name === 'MongoServerError' && err.code === 11000) {
+      console.error('Mongo duplicate key error during registration:', err);
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    return sendErrorResponse(res, err, 'Registration error');
+  }
+});
+
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    console.log('Missing email or password:', { email });
+    return res.status(400).json({ message: 'Please provide email and password' });
+  }
+
+  try {
+    const user = await User.findOne({ email }).select('+password +otp +otpExpires');
+    console.log(
+      'User query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No user found for email:', email);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.password) {
+      console.log('No password found for user:', user._id);
+      return res.status(500).json({ message: 'User password not set' });
+    }
+
+    console.log('Stored password hash (first 10 chars):', user.password.substring(0, 10));
+    const isMatch = await user.matchPassword(password);
+    console.log('Password match result:', isMatch);
+
+    if (!isMatch) {
+      console.log('Password mismatch for user:', user._id);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    let isTrusted = false;
+    const refreshToken = req.cookies ? req.cookies.refreshToken : null;
+
+    if (refreshToken) {
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        if (decoded.id === user._id.toString()) {
+          isTrusted = true;
+        }
+      } catch (err) {
+        console.log('Invalid refresh token:', err.message);
+      }
+    }
+
+    if (isTrusted) {
+      if (!process.env.JWT_SECRET) {
+        console.log('JWT_SECRET is not defined');
+        return res.status(500).json({
+          message: 'Server configuration error: JWT_SECRET not set',
+        });
+      }
+
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+      });
+      console.log('JWT token generated:', token.substring(0, 20) + '...');
+
+      return res.json({
+        token,
+        user: {
+          _id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      });
+    } else {
+      const otp = generateOTP();
+      user.otp = otp;
+      user.otpExpires = Date.now() + 10 * 60 * 1000;
+      await user.save();
+
+      const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>ServiceHub OTP Verification</h2>
+          <p>Your one-time password (OTP) is:</p>
+          <h3 style="color: #007bff;">${otp}</h3>
+          <p>This code expires in 10 minutes. Please enter it to complete your login.</p>
+          <p>If you did not request this, please ignore this email.</p>
+          <p>Best regards,<br>ServiceHub Team</p>
+        </div>
+      `;
+
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your OTP for Verification',
+          html,
+        });
+      } catch (emailErr) {
+        console.error('Error sending login OTP email:', emailErr.response?.body || emailErr);
+
+        const sendGridMessage =
+          emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+        if (sendGridMessage.includes('Maximum credits exceeded')) {
+          return res.status(503).json({
+            message:
+              'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+          });
+        }
+
+        return res.status(502).json({
+          message: 'Could not send OTP email. Please try again later.',
+        });
+      }
+
+      return res.json({ needsVerification: true, message: 'OTP sent to your email' });
+    }
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Login error');
+  }
+});
+
+const adminLogin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    console.log('Missing email or password:', { email });
+    return res.status(400).json({ message: 'Please provide email and password' });
+  }
+
+  try {
+    const user = await User.findOne({ email, role: 'admin' }).select(
+      '+password +otp +otpExpires'
+    );
+    console.log(
+      'Admin user query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No admin user found for email:', email);
+      return res.status(401).json({ message: 'Invalid admin credentials' });
+    }
+
+    if (!user.password) {
+      console.log('No password found for admin user:', user._id);
+      return res.status(500).json({ message: 'Admin user password not set' });
+    }
+
+    console.log('Stored password hash (first 10 chars):', user.password.substring(0, 10));
+    const isMatch = await user.matchPassword(password);
+    console.log('Password match result:', isMatch);
+
+    if (!isMatch) {
+      console.log('Password mismatch for admin user:', user._id);
+      return res.status(401).json({ message: 'Invalid admin credentials' });
+    }
+
+    let isTrusted = false;
+    const refreshToken = req.cookies ? req.cookies.refreshToken : null;
+
+    if (refreshToken) {
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        if (decoded.id === user._id.toString()) {
+          isTrusted = true;
+        }
+      } catch (err) {
+        console.log('Invalid refresh token:', err.message);
+      }
+    }
+
+    if (isTrusted) {
+      if (!process.env.JWT_SECRET) {
+        console.log('JWT_SECRET is not defined');
+        return res.status(500).json({
+          message: 'Server configuration error: JWT_SECRET not set',
+        });
+      }
+
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+      });
+      console.log('JWT token generated:', token.substring(0, 20) + '...');
+
+      return res.json({
+        token,
+        user: {
+          _id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      });
+    } else {
+      const otp = generateOTP();
+      user.otp = otp;
+      user.otpExpires = Date.now() + 10 * 60 * 1000;
+      await user.save();
+
+      const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>ServiceHub OTP Verification</h2>
+          <p>Your one-time password (OTP) is:</p>
+          <h3 style="color: #007bff;">${otp}</h3>
+          <p>This code expires in 10 minutes. Please enter it to complete your login.</p>
+          <p>If you did not request this, please ignore this email.</p>
+          <p>Best regards,<br>ServiceHub Team</p>
+        </div>
+      `;
+
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your OTP for Admin Verification',
+          html,
+        });
+      } catch (emailErr) {
+        console.error('Error sending admin OTP email:', emailErr.response?.body || emailErr);
+
+        const sendGridMessage =
+          emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+        if (sendGridMessage.includes('Maximum credits exceeded')) {
+          return res.status(503).json({
+            message:
+              'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+          });
+        }
+
+        return res.status(502).json({
+          message: 'Could not send admin OTP email. Please try again later.',
+        });
+      }
+
+      return res.json({ needsVerification: true, message: 'OTP sent to your email' });
+    }
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Admin login error');
+  }
+});
+
+const adminSignup = asyncHandler(async (req, res) => {
+  const { name, email, phone, password } = req.body;
+
+  if (!name || !email || !password) {
+    console.log('Missing required fields:', { name, email, password });
+    return res.status(400).json({ message: 'Please provide all required fields' });
+  }
+
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      console.log('User already exists:', email);
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      password,
+      role: 'admin',
+      profile: {},
+    });
+    console.log('Admin user created:', user ? user._id : 'null');
+
+    if (!user) {
+      console.log('Failed to create admin user');
+      return res.status(400).json({ message: 'Failed to create admin user' });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>ServiceHub OTP Verification</h2>
+        <p>Your one-time password (OTP) for admin registration is:</p>
+        <h3 style="color: #007bff;">${otp}</h3>
+        <p>This code expires in 10 minutes. Please enter it to complete your registration.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Best regards,<br>ServiceHub Team</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Your OTP for Admin Registration',
+        html,
+      });
+    } catch (emailErr) {
+      console.error('Error sending admin signup OTP email:', emailErr.response?.body || emailErr);
+
+      const sendGridMessage =
+        emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+      if (sendGridMessage.includes('Maximum credits exceeded')) {
+        return res.status(503).json({
+          message:
+            'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+        });
+      }
+
+      return res.status(502).json({
+        message: 'Could not send admin registration OTP email. Please try again later.',
+      });
+    }
+
+    return res.status(201).json({ needsVerification: true, message: 'OTP sent to your email' });
+  } catch (err) {
+    if (err.name === 'MongoServerError' && err.code === 11000) {
+      console.error('Mongo duplicate key error during admin signup:', err);
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    return sendErrorResponse(res, err, 'Admin signup error');
+  }
+});
+
+const adminVerifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    console.log('Missing email or OTP:', { email, otp });
+    return res.status(400).json({ message: 'Please provide email and OTP' });
+  }
+
+  try {
+    const user = await User.findOne({ email, role: 'admin' }).select('+otp +otpExpires');
+    console.log(
+      'Admin user query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No admin user found for email:', email);
+      return res.status(400).json({ message: 'Invalid email or OTP' });
+    }
+
+    if (!user.otp || !user.otpExpires) {
+      console.log('No OTP or OTP expiry set for user:', user._id);
+      return res.status(400).json({ message: 'OTP not found or expired' });
+    }
+
+    if (user.otpExpires < Date.now()) {
+      console.log('OTP expired for user:', user._id);
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const isMatch = await bcrypt.compare(otp, user.otp);
+    console.log('OTP match result:', isMatch);
+
+    if (!isMatch) {
+      console.log('Invalid OTP for user:', user._id);
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
+    const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      token,
+      user: {
+        _id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Admin OTP verification error');
+  }
+});
+
+const adminResendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    console.log('Missing email:', { email });
+    return res.status(400).json({ message: 'Please provide email' });
+  }
+
+  try {
+    const user = await User.findOne({ email, role: 'admin' }).select('+otp +otpExpires');
+    console.log(
+      'Admin user query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No admin user found for email:', email);
+      return res.status(404).json({ message: 'Admin user not found' });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>ServiceHub OTP Verification</h2>
+        <p>Your new one-time password (OTP) is:</p>
+        <h3 style="color: #007bff;">${otp}</h3>
+        <p>This code expires in 10 minutes. Please enter it to complete your verification.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Best regards,<br>ServiceHub Team</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Your New OTP for Admin Verification',
+        html,
+      });
+    } catch (emailErr) {
+      console.error('Error sending admin resend OTP email:', emailErr.response?.body || emailErr);
+
+      const sendGridMessage =
+        emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+      if (sendGridMessage.includes('Maximum credits exceeded')) {
+        return res.status(503).json({
+          message:
+            'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+        });
+      }
+
+      return res.status(502).json({
+        message: 'Could not resend admin OTP email. Please try again later.',
+      });
+    }
+
+    return res.json({ message: 'OTP resent to your email' });
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Admin resend OTP error');
+  }
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    console.log('Missing email or newPassword:', { email });
+    return res.status(400).json({ message: 'Please provide email and new password' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    console.log(
+      'User query result for reset:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No user found for email:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (newPassword.length < 8) {
+      console.log('Password too short for user:', user._id);
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+    console.log('Password reset for user:', user._id, 'Role:', user.role);
+
+    return res.status(200).json({ message: 'Password reset successfully' });
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Password reset error');
+  }
+});
+
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    console.log('Missing email or OTP:', { email, otp });
+    return res.status(400).json({ message: 'Please provide email and OTP' });
+  }
+
+  try {
+    const user = await User.findOne({ email }).select('+otp +otpExpires');
+    console.log(
+      'User query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No user found for email:', email);
+      return res.status(400).json({ message: 'Invalid email or OTP' });
+    }
+
+    if (!user.otp || !user.otpExpires) {
+      console.log('No OTP or OTP expiry set for user:', user._id);
+      return res.status(400).json({ message: 'OTP not found or expired' });
+    }
+
+    if (user.otpExpires < Date.now()) {
+      console.log('OTP expired for user:', user._id);
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const isMatch = await bcrypt.compare(otp, user.otp);
+    console.log('OTP match result:', isMatch);
+
+    if (!isMatch) {
+      console.log('Invalid OTP for user:', user._id);
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
+    const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      token,
+      user: {
+        _id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    return sendErrorResponse(res, err, 'OTP verification error');
+  }
+});
+
+const resendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    console.log('Missing email:', { email });
+    return res.status(400).json({ message: 'Please provide email' });
+  }
+
+  try {
+    const user = await User.findOne({ email }).select('+otp +otpExpires');
+    console.log(
+      'User query result:',
+      user ? { _id: user._id, email: user.email, role: user.role } : 'null'
+    );
+
+    if (!user) {
+      console.log('No user found for email:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>ServiceHub OTP Verification</h2>
+        <p>Your new one-time password (OTP) is:</p>
+        <h3 style="color: #007bff;">${otp}</h3>
+        <p>This code expires in 10 minutes. Please enter it to complete your verification.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Best regards,<br>ServiceHub Team</p>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Your New OTP for Verification',
+        html,
+      });
+    } catch (emailErr) {
+      console.error('Error sending resend OTP email:', emailErr.response?.body || emailErr);
+
+      const sendGridMessage =
+        emailErr.response?.body?.errors?.[0]?.message || emailErr.message || '';
+
+      if (sendGridMessage.includes('Maximum credits exceeded')) {
+        return res.status(503).json({
+          message:
+            'Email service limit reached (SendGrid credits exceeded). Please try again later or contact support.',
+        });
+      }
+
+      return res.status(502).json({
+        message: 'Could not resend OTP email. Please try again later.',
+      });
+    }
+
+    return res.json({ message: 'OTP resent to your email' });
+  } catch (err) {
+    return sendErrorResponse(res, err, 'Resend OTP error');
+  }
+});
+
+const logout = asyncHandler(async (req, res) => {
+  res.clearCookie('refreshToken');
+  res.json({ message: 'Logged out successfully' });
+});
+
+module.exports = {
+  register,
+  login,
+  adminLogin,
+  adminSignup,
+  adminVerifyOtp,
+  adminResendOtp,
+  resetPassword,
+  verifyOtp,
+  resendOtp,
+  logout,
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
+const bcrypt = require('bcrypt');
+const sendEmail = require('../utils/sendEmail');
+
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 const register = asyncHandler(async (req, res) => {
   const { name, email, phone, password, role } = req.body;
   console.log('Register request body:', req.body);
@@ -651,3 +1464,4 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 module.exports = { register, login, adminLogin, adminSignup, adminVerifyOtp, adminResendOtp, resetPassword, verifyOtp, resendOtp, logout };
+ */
