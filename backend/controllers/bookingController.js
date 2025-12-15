@@ -37,17 +37,6 @@ const bookingValidationSchema = Joi.object({
     }),
 });
 
-/* const calculateRevenue = async () => {
-  const result = await Booking.aggregate([
-    { $match: { status: 'completed' } },
-    { $group: { _id: null, total: { $sum: '$totalPrice' } } },
-  ]);
-  return result[0]?.total || 0;
-};
- */
-
-
-
 const calculateRevenue = async () => {
   const result = await Booking.aggregate([
     { $match: { status: 'completed' } },

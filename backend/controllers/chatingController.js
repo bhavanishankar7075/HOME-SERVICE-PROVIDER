@@ -329,9 +329,6 @@ const deleteConversation = asyncHandler(async (req, res) => {
 });
 
 
-
-
-
 const clearChatHistory = asyncHandler(async (req, res) => {
     const { conversationId } = req.params;
 
