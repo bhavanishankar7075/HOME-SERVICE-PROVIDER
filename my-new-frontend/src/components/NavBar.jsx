@@ -23,7 +23,6 @@ const socket = io(API_URL, {
   reconnectionAttempts: 5,
 });
 
-// All custom hooks (useSocketNotifications, useDebounce, etc.) remain unchanged.
 const useSocketNotifications = () => {
     const dispatch = useDispatch();
     const { user, notifications = [] } = useSelector((state) => state.auth || {});
@@ -137,7 +136,6 @@ const Navbar = () => {
   const sessionTokenRef = useRef(null);
   const cityIcons = { 'Mumbai': '🏙️', 'Delhi': '🕌', 'Bangalore': '🌳', 'Visakhapatnam': '🚢', 'Chennai': '🏖️', 'Kolkata': '🚋', 'Hyderabad': '🍲' };
 
-  // All useEffect hooks and handler functions remain unchanged.
   useEffect(() => {
     const syncUserProfile = async () => {
       if (token && user && !user.profile) {
@@ -372,10 +370,8 @@ const Navbar = () => {
       }}>
         <Toolbar sx={{ justifyContent: 'space-between', height: '100px', px: { xs: 2, md: 4 } }}>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={handleLogoClick}>
-            {/* ================================================================================= */}
-            {/* DESIGN FIX: Logo size is now controlled by width, as requested.               */}
-            {/* ================================================================================= */}
+          {/* Logo Section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', minWidth: '120px' }} onClick={handleLogoClick}>
             <img 
               src={serviceHubLogo} 
               alt="ServiceHub Logo" 
@@ -383,18 +379,35 @@ const Navbar = () => {
             />
           </Box>
 
+          {/* Search Bar - Only for customers */}
           {isAuthenticated && user?.role === 'customer' && (
-            <Box sx={{ position: 'relative', display: { xs: 'none', md: 'block' }, mx: 3, flexGrow: 1, maxWidth: '500px' }}>
+            <Box sx={{ 
+              position: 'relative', 
+              display: { xs: 'none', md: 'block' }, 
+              mx: 3, 
+              flexGrow: 0,
+              width: '400px',
+              flexShrink: 0
+            }}>
               <form onSubmit={handleSearchSubmit}>
-                <TextField fullWidth variant="outlined" size="small" placeholder="Search for services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                <TextField 
+                  fullWidth 
+                  variant="outlined" 
+                  size="small" 
+                  placeholder="Search for services..." 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
                     startAdornment: <SearchIcon size={20} style={{ marginRight: '8px', color: '#888' }} />,
                     sx: { borderRadius: '25px', bgcolor: 'rgba(0,0,0,0.04)' }
-                  }} />
+                  }} 
+                />
               </form>
               {(isSearchLoading || searchResults.length > 0) && (
                 <Paper sx={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1300, mt: 1, borderRadius: 2 }}>
-                  {isSearchLoading ? ( <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress size={24} /></Box> ) : (
+                  {isSearchLoading ? ( 
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress size={24} /></Box> 
+                  ) : (
                     <List dense>
                       {searchResults.map(service => (
                         <ListItemButton key={service._id} component={Link} to={`/services/${service._id}`} onClick={() => { setSearchQuery(''); setSearchResults([]); }}>
@@ -407,60 +420,62 @@ const Navbar = () => {
                 </Paper>
               )}
             </Box>
-          )}  
-     <Stack
-      direction="row"
-      spacing={2}
-      sx={{
-        display: { xs: 'none', md: 'flex' },
-        alignItems: 'center',
-        justifyContent: { xs: 'flex-start', md: 'flex-start', lg: 'center', xl: 'center' },
-        px: { xs: 1, md: 2, lg: 40, xl: 35 }, // Adjusted padding for better alignment
-      }}
-    >
-      {navigationItems.map((item) => (
-        <Button
-          key={item.label}
-          onClick={item.onClick ? item.onClick : () => navigate(item.href)}
-          startIcon={item.icon}
-          sx={{
-            textTransform: 'none',
-            color: 'text.primary',
-            fontWeight: 600,
-            fontSize: '1rem',
-            px: { xs: 1.5, md: 2 },
-            py: 1,
-            borderRadius: '12px',
-            position: 'relative',
-            transition: 'color 0.3s ease, background-color 0.3s ease',
-            '&:hover': {
-              color: 'primary.main',
-              backgroundColor: 'action.hover',
-              '&::after': {
-                width: '100%',
-              },
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: 0,
-              left: '-8px', // Extend to account for padding and icon
-              right: '-8px', // Extend to account for padding and icon
-              width: 0,
-              height: '2px',
-              backgroundColor: 'primary.main',
-              transition: 'width 0.3s ease-in-out',
-            },
-          }}
-        >
-          {item.label}
-        </Button>
-      ))}
-    </Stack>
+          )}
 
-          <Box sx={{ flexGrow: { xs: 1, md: 0 } }} />
+          {/* Navigation Links - Centered */}
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexGrow: 1,
+              mx: 2
+            }}
+          >
+            {navigationItems.map((item) => (
+              <Button
+                key={item.label}
+                onClick={item.onClick ? item.onClick : () => navigate(item.href)}
+                startIcon={item.icon}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 2,
+                  py: 1,
+                  borderRadius: '12px',
+                  position: 'relative',
+                  transition: 'color 0.3s ease, background-color 0.3s ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                    backgroundColor: 'action.hover',
+                    '&::after': {
+                      width: '100%',
+                    },
+                  },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    width: 0,
+                    height: '2px',
+                    backgroundColor: 'primary.main',
+                    transition: 'width 0.3s ease-in-out',
+                  },
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Stack>
 
-          <Stack direction="row" spacing={{xs: 0.5, sm: 1}} alignItems="center">
+          {/* Right Side Actions */}
+          <Stack direction="row" spacing={{xs: 0.5, sm: 1}} alignItems="center" sx={{ minWidth: 'fit-content' }}>
             <Button onClick={() => setLocationPopupOpen(true)} startIcon={<MapPin size={20} />} sx={{
                 textTransform: 'none', color: 'text.secondary', display: { xs: 'none', sm: 'inline-flex' },
                 '&:hover': { backgroundColor: 'action.hover' }
