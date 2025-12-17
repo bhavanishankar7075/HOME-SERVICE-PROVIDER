@@ -1,13 +1,29 @@
 const asyncHandler = require('express-async-handler');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+/* const { GoogleGenerativeAI } = require('@google/generative-ai'); */
+const { GoogleGenAI } = require("@google/genai");
 const Conversation = require('../models/Conversation');
 const Chating = require('../models/Chating');
 const Service = require('../models/Service');
 const Feedback = require('../models/Feedback');
 const mongoose = require('mongoose');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+/* const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" }); */
+
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+// keep variable name "model"
+const model = {
+  generateContent: async (prompt) => {
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    return response;
+  },
+};
 
 
 
