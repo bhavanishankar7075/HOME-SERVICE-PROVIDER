@@ -7,7 +7,9 @@ const Feedback = require('../models/Feedback');
 const mongoose = require('mongoose');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-pro-latest" });
+
+
 
 // Cache for knowledge base
 let knowledgeBaseCache = null;
