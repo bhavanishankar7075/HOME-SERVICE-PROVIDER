@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined } from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
-import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -75,10 +74,6 @@ function Login() {
       dispatch(setLoading(false));
     }
   };
-
- if (isLoading && !user) {
-  return <LoadingScreen title="Authenticating" message="Please wait while we log you in..." />;
-}
 
   if (user) {
     return null;

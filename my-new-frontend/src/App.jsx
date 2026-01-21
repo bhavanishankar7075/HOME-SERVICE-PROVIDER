@@ -81,14 +81,13 @@ const AnimatedRoutes = () => {
     </AnimatePresence>
   );
 };
-
 const Layout = ({ children }) => {
   const { loading: isServicesLoading } = useContext(ServicesContext);
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <Box component="main" sx={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
       <FooterWrapper />

@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { EmailOutlined, LockOutlined } from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
-import LoadingScreen from '../components/LoadingScreen';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -35,7 +34,6 @@ function VerifyOTP() {
   const { state } = useLocation();
   const { email } = state || {};
   const { user, token, isAuthenticated, isLoading } = useSelector((state) => state.auth);
-  const stateRef = useRef(useSelector((state) => state.auth));
 
   useEffect(() => {
     if (isAuthenticated && user && token) {
@@ -113,18 +111,9 @@ function VerifyOTP() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-/*   if (isLoading && !user) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Verifying OTP...</Typography>
-      </Box>
-    );
-  } */
-
-    if (isLoading && !user) {
-  return <LoadingScreen title="Verifying Your Code" message="Just a moment, we're checking your OTP..." />;
-}
+  if (user) {
+    return null;
+  }
 
   return (
     <Box

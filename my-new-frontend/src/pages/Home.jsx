@@ -7,14 +7,13 @@ import {
   Button, Card, CardActionArea, CardContent, CardMedia, Typography, Box, CircularProgress, Alert, Container, Grid, Paper,
   Autocomplete, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Skeleton, Avatar, Rating,
 } from '@mui/material';
-// No longer importing or returning LoadingScreen: import LoadingScreen from '../components/LoadingScreen'; 
 import {
   Search as SearchIcon, ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon, EventAvailable as EventAvailableIcon,
   PinDrop as PinDropIcon, DoneAll as DoneAllIcon, VerifiedUser as VerifiedUserIcon, CalendarMonth as CalendarMonthIcon,
   Shield as ShieldIcon, SupportAgent as SupportAgentIcon, Payment as PaymentIcon, Percent as PercentIcon, ArrowBack as ArrowBackIcon,
   SentimentVerySatisfied as SentimentVerySatisfiedIcon, CurrencyRupee as CurrencyRupeeIcon, CleanHands as CleanHandsIcon,
   Plumbing as PlumbingIcon, Bolt as BoltIcon, Kitchen as KitchenIcon, FormatPaint as FormatPaintIcon, Carpenter as CarpenterIcon,
-  BugReport as BugReportIcon, Yard as YardIcon,
+  BugReport as BugReportIcon, Yard as YardIcon, Group as GroupIcon, Handshake as HandshakeIcon, Star as StarIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import io from 'socket.io-client';
@@ -38,12 +37,6 @@ const partners = [
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const announcements = [
-  'Limited Time: 25% off!',
-  'New same-day plumbing services available!',
-  'Join our loyalty program for discounts!',
-];
-
 const categories = [
   { name: 'Cleaning', icon: <CleanHandsIcon sx={{ fontSize: 40 }} /> },
   { name: 'Plumbing', icon: <PlumbingIcon sx={{ fontSize: 40 }} /> },
@@ -61,22 +54,21 @@ const blogPosts = [
     title: "5 Essential Plumbing Tips for Every Homeowner",
     excerpt: "Prevent common plumbing disasters with these simple, actionable tips that can save you...",
     image: plumbingImg,
-    fullContent: "To prevent clogs, never pour grease down the drain. Use a drain strainer to catch hair and food particles. Once a month, flush drains with a mix of hot water and vinegar. Regularly check for leaks under sinks and around toilets to catch problems early. Finally, know where your main water shut-off valve is in case of an emergency. Following these steps can save you from costly repairs.",
+    fullContent: "To prevent clogs, never pour grease down the drain. Use a drain strainer to catch hair and food particles. Once a month, flush drains with a mix of hot water and vinegar. Regularly check for leaks under sinks and around toilets to catch problems early. Finally, know where your main water shut-off valve is in case of an emergency.",
   },
   {
     id: 2,
     title: "How to Choose the Right Paint for Your Walls",
     excerpt: "Choosing the right paint is more than just picking a color. We break down the different types...",
     image: paintingImg,
-    fullContent: "For high-traffic areas like hallways and kitchens, choose a satin or semi-gloss finish as they are easier to clean. For bedrooms and living rooms, a matte or eggshell finish provides a smooth, low-reflection look. Always use a primer before painting, especially when covering a dark color with a lighter one. Consider using low-VOC or zero-VOC paints for better indoor air quality.",
+    fullContent: "For high-traffic areas like hallways and kitchens, choose a satin or semi-gloss finish. For bedrooms, a matte or eggshell finish provides a smooth look. Always use a primer before painting, especially when covering a dark color.",
   },
 ];
 
 const faqs = [
   { question: 'How do I book a service?', answer: 'Simply select your service, choose a time, and confirm. Your profile details are used automatically for a fast checkout!' },
-  { question: 'Are the service providers background-checked?', answer: 'Absolutely. Every professional on our platform undergoes a rigorous verification process, including background checks, to ensure your safety and peace of mind.' },
-  { question: 'What if I am not satisfied with the service?', answer: 'Your satisfaction is our priority. If you are not happy with the service, please contact our support team within 24 hours, and we will arrange a rework or provide a suitable resolution.' },
-  { question: 'What is your cancellation policy?', answer: 'You can cancel any booking free of charge up to 24 hours before the scheduled service time. Cancellations made within 24 hours may be subject to a small fee.' },
+  { question: 'Are the service providers background-checked?', answer: 'Absolutely. Every professional on our platform undergoes a rigorous verification process, including background checks.' },
+  { question: 'What if I am not satisfied with the service?', answer: 'Your satisfaction is our priority. If you are not happy, contact our support team within 24 hours.' },
 ];
 
 const scrollingServices = [
@@ -88,75 +80,26 @@ const scrollingServices = [
   { name: 'AC Repair', image: 'https://cdn-icons-png.flaticon.com/128/816/816922.png' },
 ];
 
-const HeroSection = ({ handleNavigation }) => (
-  <Box component="section" sx={{ background: 'linear-gradient(135deg, #4F46E5, #A855F7, #EC4899)', color: 'white', py: { xs: 12, md: 16 }, textAlign: 'center' }}>
-    <Container>
-      <Typography variant="h1" sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem' }, fontWeight: 'bold' }}>
-        Reliable Home Services, On Demand
-      </Typography>
-      <Typography variant="h5" sx={{ my: 4, maxWidth: '800px', mx: 'auto' }}>
-        Your trusted partner for top-quality professionals.
-      </Typography>
-      <Button
-        variant="contained"
-        size="large"
-        sx={{ bgcolor: 'white', color: '#4F46E5', '&:hover': { bgcolor: '#F3F4F6' }, fontWeight: 'bold', py: 1.5, px: 4, borderRadius: 8 }}
-        onClick={() => handleNavigation('/services')}
-      >
-        Explore Services
-      </Button>
-    </Container>
-  </Box>
-);
-
-const ServiceMarquee = () => {
-  const extendedServices = [...scrollingServices, ...scrollingServices, ...scrollingServices]; // Triple copy for smoother loop
-  return (
-    <Box sx={{ py: 4, bgcolor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-      <Box sx={{ overflow: 'hidden' }}>
-        <Box className="marquee-content" sx={{ display: 'flex', animation: 'marquee 35s linear infinite' }}>
-          {extendedServices.map((service, index) => (
-            <Box key={index} sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              mx: 4,
-              minWidth: 150 
-            }}>
-              <img src={service.image} alt={service.name} style={{ height: '48px', marginBottom: '8px' }} />
-              <Typography sx={{ fontWeight: 'medium', color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                {service.name}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-
-const AdvantageSection = () => {
-  const items = [
-    { icon: <CalendarMonthIcon />, text: 'ON DEMAND / SCHEDULED' },
-    { icon: <VerifiedUserIcon />, text: 'VERIFIED PARTNERS' },
-    { icon: <ShieldIcon />, text: 'SERVICE WARRANTY' },
-    { icon: <PercentIcon />, text: 'TRANSPARENT PRICING' },
-    { icon: <PaymentIcon />, text: 'ONLINE PAYMENTS' },
-    { icon: <SupportAgentIcon />, text: 'SUPPORT' },
+const StatsSection = ({ stats }) => {
+  const statItems = [
+    { label: 'Happy Customers', value: stats.totalCustomers || '1,200+', icon: <GroupIcon /> },
+    { label: 'Services Completed', value: stats.totalBookings || '4,500+', icon: <EventAvailableIcon /> },
+    { label: 'Expert Partners', value: stats.totalProviders || '150+', icon: <HandshakeIcon /> },
+    { label: 'Average Rating', value: '4.8/5', icon: <StarIcon /> },
   ];
+
   return (
-    <Box component="section" sx={{ py: { xs: 6, md: 8 }, bgcolor: 'white' }}>
+    <Box sx={{ bgcolor: 'white', py: 4, borderBottom: '1px solid #edf2f7' }}>
       <Container>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 5, textAlign: 'center' }}>
-          THE SERVICEHUB ADVANTAGE
-        </Typography>
-        <Grid container spacing={{ xs: 2, md: 0 }} justifyContent="center">
-          {items.map(item => (
-            <Grid item xs={4} sm={4} md={2} key={item.text}>
-              <Box sx={{ textAlign: 'center', p: { xs: 1, sm: 2 } }}>
-                <Box sx={{ fontSize: 40, mb: 1, color: 'primary.main' }}>{item.icon}</Box>
-                <Typography variant="body2" sx={{ fontWeight: '600', fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>{item.text}</Typography>
+        <Grid container spacing={2}>
+          {statItems.map((item, idx) => (
+            <Grid item xs={6} md={3} key={idx}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#4F46E5' }}>{item.value}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, color: 'text.secondary' }}>
+                  {item.icon}
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.label}</Typography>
+                </Box>
               </Box>
             </Grid>
           ))}
@@ -166,13 +109,87 @@ const AdvantageSection = () => {
   );
 };
 
+const HeroSection = ({ handleNavigation }) => (
+  <Box component="section" sx={{ 
+    background: 'linear-gradient(135deg, #4F46E5, #A855F7, #EC4899)', 
+    color: 'white', 
+    py: { xs: 8, md: 12, lg: 15 }, // Responsive vertical padding
+    textAlign: 'center',
+    width: '100%'
+  }}>
+    <Container>
+      <Typography variant="h1" sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' }, fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
+        Professional Home Services,<br /> On Your Schedule
+      </Typography>
+      <Typography variant="h5" sx={{ mb: 5, opacity: 0.9, maxWidth: '800px', mx: 'auto', px: 2 }}>
+        Book highly-rated professionals for cleaning, plumbing, electrical work and more in just 60 seconds.
+      </Typography>
+      <Button
+        variant="contained"
+        size="large"
+        sx={{ bgcolor: 'white', color: '#4F46E5', '&:hover': { bgcolor: '#F3F4F6' }, fontWeight: 'bold', py: 2, px: 6, borderRadius: 10, fontSize: '1.1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+        onClick={() => handleNavigation('/services')}
+      >
+        Explore Services
+      </Button>
+    </Container>
+  </Box>
+);
+
+const ServiceMarquee = () => {
+  const extendedServices = [...scrollingServices, ...scrollingServices, ...scrollingServices];
+  return (
+    <Box sx={{ py: 3, bgcolor: '#fdfdfd', borderBottom: '1px solid #E5E7EB' }}>
+      <Box sx={{ overflow: 'hidden' }}>
+        <Box className="marquee-content" sx={{ display: 'flex', animation: 'marquee 30s linear infinite' }}>
+          {extendedServices.map((service, index) => (
+            <Box key={index} sx={{ display: 'flex', alignItems: 'center', mx: 5, minWidth: 140 }}>
+              <img src={service.image} alt={service.name} style={{ height: '32px', marginRight: '12px' }} />
+              <Typography sx={{ fontWeight: 600, color: '#374151' }}>{service.name}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+const AdvantageSection = () => {
+  const items = [
+    { icon: <CalendarMonthIcon />, text: 'ON DEMAND' },
+    { icon: <VerifiedUserIcon />, text: 'VERIFIED PARTNERS' },
+    { icon: <ShieldIcon />, text: 'SERVICE WARRANTY' },
+    { icon: <PercentIcon />, text: 'TRANSPARENT PRICING' },
+    { icon: <PaymentIcon />, text: 'SECURE PAYMENTS' },
+    { icon: <SupportAgentIcon />, text: '24/7 SUPPORT' },
+  ];
+  return (
+    <Box component="section" sx={{ py: 8, bgcolor: 'white' }}>
+      <Container>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 6, textAlign: 'center', letterSpacing: -0.5 }}>
+          THE SERVICEHUB ADVANTAGE
+        </Typography>
+        <Grid container spacing={2} justifyContent="center">
+          {items.map(item => (
+            <Grid item xs={4} sm={4} md={2} key={item.text}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ fontSize: 40, mb: 1, color: '#4F46E5' }}>{item.icon}</Box>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', color: '#4b5563' }}>{item.text}</Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </Box>
+  );
+};
 
 const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory }) => (
-  <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: '#F9FAFB' }}>
+  <Box component="section" sx={{ py: 10, bgcolor: '#F9FAFB' }}>
     <Container>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Find the Perfect Service</Typography>
-      <Typography sx={{ textAlign: 'center', color: 'text.secondary', mb: 4 }}>Get instant suggestions for what you need.</Typography>
-      <Box sx={{ maxWidth: '700px', mx: 'auto', mb: 5 }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, textAlign: 'center', mb: 1 }}>Find the Perfect Service</Typography>
+      <Typography sx={{ textAlign: 'center', color: 'text.secondary', mb: 6 }}>Search through our curated list of professional services</Typography>
+      <Box sx={{ maxWidth: '650px', mx: 'auto', mb: 6 }}>
         <Autocomplete
           fullWidth
           freeSolo
@@ -182,12 +199,13 @@ const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selecte
           renderInput={(params) => (
             <TextField
               {...params}
-              placeholder="Search for 'AC Repair'..."
+              placeholder="What do you need help with?"
+              sx={{ bgcolor: 'white', borderRadius: 2 }}
               InputProps={{
                 ...params.InputProps,
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon color="primary" />
                   </InputAdornment>
                 ),
               }}
@@ -201,20 +219,21 @@ const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selecte
             <Paper
               elevation={0}
               sx={{
-                borderRadius: 3,
+                borderRadius: 4,
                 border: '1px solid',
-                borderColor: selectedCategory === cat.name ? 'primary.main' : '#E5E7EB',
-                '&:hover': { boxShadow: 4, transform: 'translateY(-4px)' },
-                transition: 'all 0.2s ease-in-out',
+                borderColor: selectedCategory === cat.name ? '#4F46E5' : '#E5E7EB',
+                '&:hover': { boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', transform: 'translateY(-4px)' },
+                transition: '0.3s',
                 cursor: 'pointer',
-                bgcolor: selectedCategory === cat.name ? 'primary.lighter' : 'white',
-                height: '100%',
+                bgcolor: selectedCategory === cat.name ? '#EEF2FF' : 'white',
+                p: 2,
+                textAlign: 'center'
               }}
               onClick={() => setSelectedCategory(prev => prev === cat.name ? '' : cat.name)}
             >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, height: '100%', color: selectedCategory === cat.name ? 'primary.main' : 'text.primary' }}>
+              <Box sx={{ color: selectedCategory === cat.name ? '#4F46E5' : '#6B7280' }}>
                 {cat.icon}
-                <Typography sx={{ fontWeight: 'medium', mt: 1, textAlign: 'center', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{cat.name}</Typography>
+                <Typography sx={{ fontWeight: 600, mt: 1, fontSize: '0.8rem' }}>{cat.name}</Typography>
               </Box>
             </Paper>
           </Grid>
@@ -225,45 +244,33 @@ const ServiceExplorerSection = ({ services, searchQuery, setSearchQuery, selecte
 );
 
 const FeaturedServicesSection = ({ featuredServices, getImageUrl, handleNavigation, loading }) => {
-    // Render Skeletons if loading is true, otherwise render the Carousel
-    const placeholderCount = 3;
-    const isReady = featuredServices.length > 0 && !loading;
-
     return (
-        <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: 'white' }}>
+        <Box component="section" sx={{ py: 10, bgcolor: 'white' }}>
             <Container>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', color: '#1F2937', mb: 8 }}>
-                    Our Most Popular Services
+                <Typography variant="h4" sx={{ fontWeight: 800, textAlign: 'center', color: '#1F2937', mb: 6 }}>
+                    Most Popular Services
                 </Typography>
-
                 {loading ? (
-                    // Skeleton/Placeholder for loading state
                     <Grid container spacing={4} justifyContent="center">
-                        {Array.from({ length: placeholderCount }).map((_, index) => (
+                        {[1, 2, 3].map((_, index) => (
                             <Grid item xs={12} sm={6} md={4} key={index}>
                                 <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 4 }} />
-                                <Box sx={{ pt: 0.5 }}>
-                                    <Skeleton />
-                                    <Skeleton width="60%" />
-                                </Box>
                             </Grid>
                         ))}
                     </Grid>
                 ) : (
-                    // Actual Carousel when ready
                     featuredServices.length > 0 && (
-                        <Carousel autoPlay interval={5000} animation="slide" navButtonsAlwaysVisible sx={{ borderRadius: 4, boxShadow: 6, overflow: 'hidden' }}>
+                        <Carousel autoPlay interval={5000} animation="slide" navButtonsAlwaysVisible sx={{ borderRadius: 4, overflow: 'hidden' }}>
                             {featuredServices.map(service => (
-                                <Paper key={service._id} sx={{ position: 'relative', overflow: 'hidden', '&:hover .zoom-image': { transform: 'scale(1.1)' } }}>
+                                <Paper key={service._id} sx={{ position: 'relative', height: 450 }}>
                                     <CardMedia
                                         component="img"
                                         image={getImageUrl(service.image)}
-                                        className="zoom-image"
-                                        sx={{ height: 400, objectFit: 'cover', transition: 'transform 0.4s ease' }}
+                                        sx={{ height: '100%', objectFit: 'cover' }}
                                     />
-                                    <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 4, color: 'white', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
-                                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{service.name}</Typography>
-                                        <Button variant="contained" sx={{ mt: 2 }} onClick={() => handleNavigation(`/services/${service._id}`)}>
+                                    <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 6, color: 'white', background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}>
+                                        <Typography variant="h4" sx={{ fontWeight: 800 }}>{service.name}</Typography>
+                                        <Button variant="contained" size="large" sx={{ mt: 3, px: 4, borderRadius: 2, bgcolor: '#4F46E5' }} onClick={() => handleNavigation(`/services/${service._id}`)}>
                                             Book Now
                                         </Button>
                                     </Box>
@@ -272,44 +279,30 @@ const FeaturedServicesSection = ({ featuredServices, getImageUrl, handleNavigati
                         </Carousel>
                     )
                 )}
-                {!loading && featuredServices.length === 0 && (
-                    <Typography sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                        No featured services available at the moment.
-                    </Typography>
-                )}
             </Container>
         </Box>
     );
 };
 
-
 const HowItWorksSection = () => {
   const steps = [
-    { icon: <EventAvailableIcon sx={{ fontSize: 40 }} />, title: "1. Pick Your Service & Time" },
-    { icon: <PinDropIcon sx={{ fontSize: 40 }} />, title: "2. Confirm Your Details ToPlace Services" },
-    { icon: <DoneAllIcon sx={{ fontSize: 40 }} />, title: "3. Relax as We Handle It Carefully" },
+    { icon: <EventAvailableIcon sx={{ fontSize: 45 }} />, title: "1. Pick Service", desc: "Select from 50+ services" },
+    { icon: <PinDropIcon sx={{ fontSize: 45 }} />, title: "2. Set Schedule", desc: "Choose date and time" },
+    { icon: <DoneAllIcon sx={{ fontSize: 45 }} />, title: "3. Service Delivery", desc: "Relax while experts work" },
   ];
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#F9FAFB' }}>
+    <Box component="section" sx={{ py: 12, bgcolor: '#F9FAFB' }}>
       <Container>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 8 }}>
-          Your Hassle-Free Booking Flow
-        </Typography>
-        <Grid container spacing={{ xs: 4, sm: 3, md: 4 }} alignItems="center" justifyContent="center">
+        <Typography variant="h4" sx={{ fontWeight: 800, textAlign: 'center', mb: 8 }}>How It Works</Typography>
+        <Grid container spacing={4} justifyContent="center">
           {steps.map((step, index) => (
-            <React.Fragment key={step.title}>
-              <Grid item xs={12} sm={4} md={index === 1 ? 4 : 3.5}>
-                <Paper elevation={6} sx={{ p: 4, textAlign: 'center', borderRadius: 4, height: '100%' }}>
-                  <Box sx={{ color: 'primary.main', mb: 2 }}>{step.icon}</Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{step.title}</Typography>
-                </Paper>
-              </Grid>
-              {index < 2 && (
-                <Grid item md={0.5} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowForwardIcon sx={{ color: '#D1D5DB', fontSize: 40 }} />
-                </Grid>
-              )}
-            </React.Fragment>
+            <Grid item xs={12} md={3.5} key={index}>
+              <Paper elevation={0} sx={{ p: 5, textAlign: 'center', borderRadius: 4, border: '1px solid #E5E7EB' }}>
+                <Box sx={{ color: '#4F46E5', mb: 3 }}>{step.icon}</Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>{step.title}</Typography>
+                <Typography variant="body2" color="text.secondary">{step.desc}</Typography>
+              </Paper>
+            </Grid>
           ))}
         </Grid>
       </Container>
@@ -317,26 +310,24 @@ const HowItWorksSection = () => {
   );
 };
 
-
 const GuaranteesSection = () => {
   const guarantees = [
-    { icon: <VerifiedUserIcon color="primary" />, title: "Verified Professionals", description: "Every expert is background-checked and trained to ensure quality and safety." },
-    { icon: <CurrencyRupeeIcon color="primary" />, title: "Transparent Pricing", description: "No hidden fees. You see the final price upfront before you book any service." },
-    { icon: <SentimentVerySatisfiedIcon color="primary" />, title: "Satisfaction Guarantee", description: "We're not happy until you are. We promise to make it right if you're not satisfied." },
+    { icon: <VerifiedUserIcon />, title: "Verified Pros", description: "Background checked and experts." },
+    { icon: <CurrencyRupeeIcon />, title: "Fixed Prices", description: "Know the cost before you book." },
+    { icon: <SentimentVerySatisfiedIcon />, title: "100% Quality", description: "Insurance and re-work cover." },
   ];
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'white' }}>
+    <Box component="section" sx={{ py: 10, bgcolor: 'white' }}>
       <Container>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', color: '#1F2937', mb: 8 }}>
-          Our Promise To You
-        </Typography>
-        <Grid container spacing={4}>
+        <Grid container spacing={6}>
           {guarantees.map(item => (
             <Grid item xs={12} md={4} key={item.title}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Box sx={{ fontSize: 50 }}>{item.icon}</Box>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', my: 2 }}>{item.title}</Typography>
-                <Typography sx={{ color: '#6B7280' }}>{item.description}</Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ color: '#4F46E5', fontSize: 40 }}>{item.icon}</Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>{item.title}</Typography>
+                  <Typography variant="body2" sx={{ color: '#6B7280' }}>{item.description}</Typography>
+                </Box>
               </Box>
             </Grid>
           ))}
@@ -347,198 +338,85 @@ const GuaranteesSection = () => {
 };
 
 const FeedbackSection = ({ feedbacks, getImageUrl, feedbackLoading }) => {
-    const placeholderCount = 3;
-
     return (
-        <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#F9FAFB' }}>
+        <Box component="section" sx={{ py: 12, bgcolor: '#F9FAFB' }}>
             <Container>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', color: '#1F2937', mb: 8 }}>
-                    What Our Customers Say
-                </Typography>
-                
-                {feedbackLoading ? (
-                    // Skeleton/Placeholder for loading state
-                    <Grid container spacing={4} alignItems="stretch">
-                        {Array.from({ length: placeholderCount }).map((_, index) => (
-                            <Grid item xs={12} md={4} key={index}>
-                                <Paper elevation={6} sx={{ p: 4, borderRadius: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <Skeleton variant="circular" width={56} height={56} sx={{ mr: 2 }} />
-                                        <Box>
-                                            <Skeleton width={100} height={20} />
-                                            <Skeleton width={80} height={15} sx={{ mt: 0.5 }} />
-                                        </Box>
-                                    </Box>
-                                    <Skeleton width="100%" height={24} sx={{ mb: 2 }} />
-                                    <Skeleton variant="text" height={15} />
-                                    <Skeleton variant="text" height={15} width="80%" />
-                                </Paper>
-                            </Grid>
-                        ))}
-                    </Grid>
-                ) : feedbacks.length > 0 ? (
-                    // Actual feedback when ready
-                    <Grid container spacing={4} alignItems="stretch">
-                        {feedbacks.slice(0, 3).map(feedback => (
-                            <Grid item xs={12} md={4} key={feedback._id}>
-                                <Paper elevation={6} sx={{ p: 4, borderRadius: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <Avatar
-                                            src={getImageUrl(feedback.bookingId?.customer?.profile?.image)}
-                                            alt={feedback.bookingId?.customer?.name || 'Anonymous'}
-                                            sx={{ width: 56, height: 56, mr: 2 }}
-                                            onError={(e) => {
-                                                e.target.src = `${API_URL}/images/default-user.png`;
-                                            }}
-                                        />
-                                        <Box>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                {feedback.bookingId?.customer?.name || 'Anonymous'}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                    <Rating value={Number(feedback.rating) || 0} readOnly sx={{ mb: 2 }} />
-                                    <Typography variant="body1" sx={{ fontStyle: 'italic', color: 'text.secondary', flexGrow: 1 }}>
-                                        "{feedback.comment || 'No comment provided'}"
-                                    </Typography>
-                                </Paper>
-                            </Grid>
-                        ))}
-                    </Grid>
-                ) : (
-                    <Typography sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                        No customer reviews yet. Be the first!
-                    </Typography>
-                )}
+                <Typography variant="h4" sx={{ fontWeight: 800, textAlign: 'center', mb: 8 }}>Customer Experiences</Typography>
+                <Grid container spacing={4}>
+                    {feedbackLoading ? [1,2,3].map(i => <Grid item xs={12} md={4} key={i}><Skeleton height={200}/></Grid>) :
+                    feedbacks.slice(0, 3).map(feedback => (
+                        <Grid item xs={12} md={4} key={feedback._id}>
+                            <Paper sx={{ p: 4, borderRadius: 4, height: '100%' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Avatar src={getImageUrl(feedback.bookingId?.customer?.profile?.image)} sx={{ width: 50, height: 50, mr: 2 }} />
+                                    <Typography sx={{ fontWeight: 700 }}>{feedback.bookingId?.customer?.name || 'User'}</Typography>
+                                </Box>
+                                <Rating value={feedback.rating} readOnly size="small" sx={{ mb: 2 }} />
+                                <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#4b5563' }}>"{feedback.comment}"</Typography>
+                            </Paper>
+                        </Grid>
+                    ))}
+                </Grid>
             </Container>
         </Box>
     );
 };
 
-
-const BlogSection = () => {
-  const [expandedBlogId, setExpandedBlogId] = useState(null);
-  const selectedPost = blogPosts.find(p => p.id === expandedBlogId);
-
-  const BlogListView = () => (
-    <Box>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 8 }}>
-        Tips & Insights
-      </Typography>
-      <Grid container spacing={4} alignItems="stretch">
-        {blogPosts.map(post => (
-          <Grid item xs={12} md={6} key={post.id}>
-            <Card elevation={2} sx={{ display: 'flex', flexDirection: 'column', borderRadius: 3, height: '100%', '&:hover': { boxShadow: 6 } }}>
-              <CardMedia component="img" image={post.image} sx={{ height: 200 }} />
-              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', flexGrow: 1 }}>{post.title}</Typography>
-                <Typography sx={{ my: 1, color: 'text.secondary' }}>{post.excerpt}</Typography>
-                <Button onClick={() => setExpandedBlogId(post.id)} endIcon={<ArrowForwardIcon />} sx={{ alignSelf: 'flex-start' }}>
-                  Read More
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
-
-  const BlogDetailView = () => (
-    <Paper elevation={4} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
-      <Button startIcon={<ArrowBackIcon />} onClick={() => setExpandedBlogId(null)} sx={{ mb: 2 }}>
-        Back to All Tips
-      </Button>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>{selectedPost?.title}</Typography>
-      <CardMedia component="img" image={selectedPost?.image} sx={{ borderRadius: 2, height: 300, mb: 3 }} />
-      <Typography sx={{ lineHeight: 1.8 }}>{selectedPost?.fullContent}</Typography>
-    </Paper>
-  );
-
-  return (
-    <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: 'white' }}>
-      <Container>
-        {expandedBlogId ? <BlogDetailView /> : <BlogListView />}
-      </Container>
-    </Box>
-  );
-};
-
-const TrustedPartnersSection = () => {
-  const extendedPartners = [...partners, ...partners];
-  return (
-    <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: '#F9FAFB' }}>
-      <Container>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#374151', mb: 5, textAlign: 'center' }}>
-          OUR TRUSTED PARTNERS
-        </Typography>
-        <Box sx={{ overflow: 'hidden' }}>
-          <Box className="marquee-content" sx={{ display: 'flex', alignItems: 'center', animation: 'marquee 40s linear infinite' }}>
-            {extendedPartners.map((p, i) => (
-              <Box
-                key={i}
-                component="img"
-                src={p.logo}
-                alt={p.name}
-                sx={{
-                  height: 60,
-                  mx: 6,
-                  objectFit: 'contain',
-                  opacity: 0.9,
-                  bgcolor: 'white',
-                  transition: 'all 0.3s',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                    opacity: 1,
-                    filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))',
-                  },
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-      </Container>
-    </Box>
-  );
-};
-
-const FaqSection = () => (
-  <Box component="section" sx={{ py: { xs: 8, md: 10 }, bgcolor: 'white' }}>
-    <Container maxWidth="md">
-      <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 8 }}>
-        Frequently Asked Questions
-      </Typography>
-      {faqs.map(faq => (
-        <Accordion key={faq.question} sx={{ boxShadow: 1, borderRadius: 2, '&:before': { display: 'none' }, mb: 2 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">{faq.question}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography sx={{ color: 'text.secondary' }}>{faq.answer}</Typography>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-    </Container>
-  </Box>
-);
-
-const CtaSection = ({ handleNavigation }) => (
-  <Box component="section" sx={{ py: { xs: 12, md: 16 }, background: 'linear-gradient(135deg, #4F46E5, #A855F7)', color: 'white', textAlign: 'center' }}>
+const TrustedPartnersSection = () => (
+  <Box component="section" sx={{ py: 8, bgcolor: 'white' }}>
     <Container>
-      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
-        Ready to Transform Your Home?
+      <Typography variant="overline" sx={{ fontWeight: 800, color: '#4b5563', textAlign: 'center', display: 'block', mb: 4 }}>
+        TRUSTED BY INDUSTRY LEADERS
       </Typography>
-      <Button
-        variant="contained"
-        size="large"
-        sx={{ bgcolor: 'white', color: '#4F46E5', '&:hover': { bgcolor: '#F3F4F6' }, fontWeight: 'bold', py: 1.5, px: 5, mt: 4, borderRadius: 8 }}
-        onClick={() => handleNavigation('/services')}
-      >
-        Book a Service Now
-      </Button>
+      <Box sx={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <Box 
+          className="marquee-content" 
+          sx={{ 
+            display: 'flex', 
+            animation: 'marquee 25s linear infinite', 
+            width: 'max-content' 
+          }}
+        >
+          {/* Doubling the map ensures the loop is continuous without gaps */}
+          {[...partners, ...partners].map((p, i) => (
+            <Box 
+              key={i} 
+              component="img" 
+              src={p.logo} 
+              alt={p.name} 
+              sx={{ 
+                height: 50, 
+                mx: 5, 
+                filter: 'none', // Logic to make logos colorful/visible
+                opacity: 1      // Logic to remove the light/faded look
+              }} 
+            />
+          ))}
+        </Box>
+      </Box>
     </Container>
   </Box>
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const Home = () => {
   const navigate = useNavigate();
@@ -554,7 +432,6 @@ const Home = () => {
 
   const fetchFeedbacks = useCallback(async () => {
     if (!token) {
-      // If token is missing, we still want to show the page structure, just without data
       setFeedbackLoading(false);
       return; 
     }
@@ -564,9 +441,7 @@ const Home = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFeedbacks(response.data || []);
-      setErrorMessage(null);
     } catch (error) {
-      console.error('Error fetching feedbacks:', error.response?.data?.message || error.message);
       setErrorMessage('Could not load customer feedback.');
     } finally {
       setFeedbackLoading(false);
@@ -592,96 +467,78 @@ const Home = () => {
 
   const handleNavigation = (path) => navigate(path);
   const filteredServices = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory ? s.category === selectedCategory : true));
-  const getImageUrl = (image) => image || 'https://via.placeholder.com/400?text=No+Image';
+  const getImageUrl = (image) => image || 'https://via.placeholder.com/400';
 
-  // --- START MODIFIED LOADER LOGIC ---
-  // The global error message logic can remain, as it's an application-level failure
   if (message.open || errorMessage) {
     return (
-      <Box sx={{
-        maxWidth: '1200px',
-        mx: 'auto',
-        p: 4,
-        mt: '70px'
-      }}>
+      <Container sx={{ mt: 15 }}>
         <Alert severity="error">{message.open ? message.text : errorMessage}</Alert>
-      </Box>
+      </Container>
     );
   }
-  // --- END MODIFIED LOADER LOGIC ---
-
-  
-  const TOP_BANNER_HEIGHT = '50px'; 
-  const NAVBAR_HEIGHT = '100px'; // Set this to your actual Navbar height (e.g., '56px' or '64px') 
 
   return (
-    <Box sx={{
-      bgcolor: '#F9FAFB',
-      // The content starts below both the Navbar and the Fixed Banner
-      pt: `calc(${NAVBAR_HEIGHT} + ${TOP_BANNER_HEIGHT})`, 
+    /* FIXED: Added 'mt' (margin-top) to ensure the entire page starts AFTER the fixed Navbar height */
+    <Box component="main" sx={{ 
+      bgcolor: 'white', 
+      mt: { xs: '64px', md: '75px', lg: '85px' } // Responsive margin-top to match navbar height
     }}>
-      {/* 1. FIXED TOP BANNER with Marquee Animation */}
-      <Box sx={{ 
-        position: 'fixed', 
-        top: NAVBAR_HEIGHT, // Banner sits below the Navbar
-        left: 0, 
-        width: '100%', 
-        zIndex: 1100, 
-        bgcolor: '#4F46E5', 
-        color: 'white', 
-        py: 1.5, 
-        overflow: 'hidden',
-        height: TOP_BANNER_HEIGHT,
-        display: 'flex', 
-        alignItems: 'center',
-        boxShadow: 3 
-      }}>
-        <Box 
-          className="marquee-content" 
-          sx={{ 
-            display: 'flex', 
-            animation: 'marquee 15s linear infinite' 
-          }}
-        >
-          {[...announcements, ...announcements].map((ann, i) => (
-            <Typography key={i} sx={{ mx: 4, whiteSpace: 'nowrap', fontWeight: 'bold' }}>
-              {ann}
-            </Typography>
-          ))}
-        </Box>
-      </Box>
+      {/* 1. Hero Section - Now starts correctly below Navbar */}
+      <HeroSection handleNavigation={handleNavigation} />
 
-      <main>
-        <HeroSection handleNavigation={handleNavigation} />
-        <ServiceMarquee />
-        <AdvantageSection />
-        <ServiceExplorerSection
-          services={services}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-        />
-        {/* Pass the loading state down to the components */}
-        <FeaturedServicesSection
-          featuredServices={filteredServices.slice(0, 5)}
-          getImageUrl={getImageUrl}
-          handleNavigation={handleNavigation}
-          loading={loading} // <-- PASS LOADING STATE
-        />
-        <HowItWorksSection />
-        <GuaranteesSection />
-        {/* Pass the feedbackLoading state down to the component */}
-        <FeedbackSection 
-            feedbacks={feedbacks} 
-            getImageUrl={getImageUrl} 
-            feedbackLoading={feedbackLoading} // <-- PASS LOADING STATE
-        />
-        <BlogSection />
-        <TrustedPartnersSection />
-        <FaqSection />
-        <CtaSection handleNavigation={handleNavigation} />
-      </main>
+      {/* 2. Professional Stats Section */}
+      <StatsSection stats={liveStats} />
+
+      {/* 3. Dynamic Marquee */}
+      <ServiceMarquee />
+
+      {/* 4. Advantage Cards */}
+      <AdvantageSection />
+
+      {/* 5. Explorer Search */}
+      <ServiceExplorerSection
+        services={services}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+      />
+
+      {/* 6. Popular Services Carousel */}
+      <FeaturedServicesSection
+        featuredServices={filteredServices.slice(0, 5)}
+        getImageUrl={getImageUrl}
+        handleNavigation={handleNavigation}
+        loading={loading}
+      />
+
+      {/* 7. Process & Social Proof */}
+      <HowItWorksSection />
+      <GuaranteesSection />
+      <FeedbackSection 
+        feedbacks={feedbacks} 
+        getImageUrl={getImageUrl} 
+        feedbackLoading={feedbackLoading}
+      />
+      
+      <TrustedPartnersSection />
+
+
+
+      {/* 8. Call to Action */}
+      <Box sx={{ py: 12, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: 'white', textAlign: 'center' }}>
+        <Container>
+          <Typography variant="h3" sx={{ fontWeight: 800, mb: 4 }}>Ready to experience better living?</Typography>
+          <Button
+            variant="contained"
+            size="large"
+            sx={{ bgcolor: 'white', color: '#4F46E5', fontWeight: 800, px: 6, py: 2, borderRadius: 10 }}
+            onClick={() => handleNavigation('/services')}
+          >
+            Book Now
+          </Button>
+        </Container>
+      </Box>
     </Box>
   );
 };

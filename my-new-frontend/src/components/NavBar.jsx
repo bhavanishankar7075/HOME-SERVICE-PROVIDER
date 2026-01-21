@@ -367,6 +367,7 @@ const Navbar = () => {
         borderBottom: '1px solid',
         borderColor: 'divider',
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        zIndex: 1400 // Ensuring Navbar is high enough
       }}>
         <Toolbar sx={{ justifyContent: 'space-between', height: '100px', px: { xs: 2, md: 4 } }}>
           
@@ -404,7 +405,8 @@ const Navbar = () => {
                 />
               </form>
               {(isSearchLoading || searchResults.length > 0) && (
-                <Paper sx={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1300, mt: 1, borderRadius: 2 }}>
+                /* THE FIX: zIndex: 1500 to go over the banner */
+                <Paper sx={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1500, mt: 1, borderRadius: 2 }}>
                   {isSearchLoading ? ( 
                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}><CircularProgress size={24} /></Box> 
                   ) : (
