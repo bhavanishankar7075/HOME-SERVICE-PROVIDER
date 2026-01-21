@@ -1,30 +1,35 @@
-import React, { useEffect } from 'react'; // <-- Import useEffect
+import React, { useEffect } from 'react'; 
 import { Box, Typography, Button, Grid, Container, Paper, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux'; // <-- Added useDispatch
 import { motion } from 'framer-motion';
 import { Dashboard, Insights, ContactMail, ArrowForward, VpnKey, PersonAdd } from '@mui/icons-material';
 import logo from '../assets/insight.png'
 
+// Import your logout action (adjust the path to your actual authSlice/actions)
+// import { logout } from '../redux/slices/authSlice'; 
 
 const Home = () => {
-  // --- All your logic remains untouched ---
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // <-- Initialize dispatch
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const adminName = useSelector((state) => state.auth.user?.name);
+  const token = useSelector((state) => state.auth.token); // Assuming you store your token in redux
 
-  // **THIS IS THE FIX**: This hook applies a style to the whole page to hide
-  // the horizontal scrollbar while this component is visible. It cleans up
-  // automatically when you navigate to another page.
   useEffect(() => {
-    // Hide scrollbar on mount
+    // 1. Handle Scrollbar
     document.body.style.overflowX = 'hidden';
 
-    // Restore scrollbar on unmount
+    // 2. Auth Logic Fix: Check if user should still be logged in
+    // If there is no token but the state says authenticated, force a logout/reset
+    if (!token && isAuthenticated) {
+        // dispatch(logout()); // Uncomment this and import your logout action to reset state
+    }
+
     return () => {
       document.body.style.overflowX = 'auto';
     };
-  }, []); // The empty array ensures this runs only once when the component is added and removed
+  }, [token, isAuthenticated, dispatch]); 
 
 
   const features = [
@@ -48,15 +53,20 @@ const Home = () => {
     }
   ];
 
-  const ActionButtons = () => (
+// Inside Home.jsx ActionButtons
+const ActionButtons = () => {
+  // Add a local check to ensure the token is actually present
+  const hasValidSession = isAuthenticated && token && token.length > 10;
+
+  return (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-      {isAuthenticated ? (
+      {hasValidSession ? (
         <Button
           variant="contained"
           size="large"
           onClick={() => navigate('/admin/dashboard')}
           endIcon={<ArrowForward />}
-          sx={{ py: 1.5, px: 5, fontWeight: 'bold', borderRadius: '50px', boxShadow: '0px 8px 15px rgba(0, 0, 0, 0.1)' }}
+          sx={{ py: 1.5, px: 5, fontWeight: 'bold', borderRadius: '50px' }}
         >
           Go to Dashboard
         </Button>
@@ -66,7 +76,7 @@ const Home = () => {
             variant="contained"
             onClick={() => navigate('/admin/login')}
             startIcon={<VpnKey />}
-            sx={{ py: 1.5, px: 5, borderRadius: '50px', bgcolor: 'white', color: '#2c5282', '&:hover': { bgcolor: '#f0f0f0' }, boxShadow: '0px 8px 15px rgba(0, 0, 0, 0.1)' }}
+            sx={{ py: 1.5, px: 5, borderRadius: '50px', bgcolor: 'white', color: '#2c5282' }}
           >
             Admin Login
           </Button>
@@ -74,7 +84,7 @@ const Home = () => {
             variant="outlined"
             onClick={() => navigate('/admin/signup')}
             startIcon={<PersonAdd />}
-            sx={{ py: 1.5, px: 5, borderRadius: '50px', color: 'white', borderColor: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+            sx={{ py: 1.5, px: 5, borderRadius: '50px', color: 'white', borderColor: 'white' }}
           >
             Signup
           </Button>
@@ -82,12 +92,12 @@ const Home = () => {
       )}
     </Stack>
   );
+};
 
   return (
     <Box sx={{ 
         width: '100vw',
         minHeight: '100vh',
-        // The overflow is now handled by the useEffect hook above
         bgcolor: 'background.default', 
         color: 'text.primary' 
     }}>
