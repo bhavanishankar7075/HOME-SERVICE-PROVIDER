@@ -6,22 +6,17 @@ import { motion } from 'framer-motion';
 import { Dashboard, Insights, ContactMail, ArrowForward, VpnKey, PersonAdd } from '@mui/icons-material';
 import logo from '../assets/insight.png'
 
-// Import your logout action (adjust the path to your actual authSlice/actions)
-// import { logout } from '../redux/slices/authSlice'; 
 
 const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch(); // <-- Initialize dispatch
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const adminName = useSelector((state) => state.auth.user?.name);
-  const token = useSelector((state) => state.auth.token); // Assuming you store your token in redux
+  const token = useSelector((state) => state.auth.token); 
 
   useEffect(() => {
-    // 1. Handle Scrollbar
+  
     document.body.style.overflowX = 'hidden';
-
-    // 2. Auth Logic Fix: Check if user should still be logged in
-    // If there is no token but the state says authenticated, force a logout/reset
     if (!token && isAuthenticated) {
         // dispatch(logout()); // Uncomment this and import your logout action to reset state
     }
@@ -53,9 +48,8 @@ const Home = () => {
     }
   ];
 
-// Inside Home.jsx ActionButtons
+
 const ActionButtons = () => {
-  // Add a local check to ensure the token is actually present
   const hasValidSession = isAuthenticated && token && token.length > 10;
 
   return (

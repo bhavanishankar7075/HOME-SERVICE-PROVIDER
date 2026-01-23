@@ -163,7 +163,7 @@ const CustomerFeedbacks = () => {
     const rows = filteredFeedbacks.map(f => [
       f.bookingId?._id || 'N/A',
       f.bookingId?.customer?.name || f.userId?.name || 'N/A',
-      f.bookingId?.customer?.profile?.image || 'N/A', // <-- UPDATED
+      f.bookingId?.customer?.profile?.image || 'N/A', 
       f.bookingId?.provider?.name || 'N/A',
       f.bookingId?.service?.name || 'N/A',
       f.rating,
@@ -331,7 +331,7 @@ const CustomerFeedbacks = () => {
             </TableHead>
             <TableBody>
               {paginatedFeedbacks.map((feedback) => {
-                const customerImageUrl = feedback.bookingId?.customer?.profile?.image || 'https://via.placeholder.com/40?text=U'; // <-- UPDATED
+                const customerImageUrl = feedback.bookingId?.customer?.profile?.image || 'https://via.placeholder.com/40?text=U';
                 return (
                   <TableRow key={feedback._id}>
                     <TableCell>{feedback.bookingId?._id?.slice(-6).toUpperCase() || 'N/A'}</TableCell>

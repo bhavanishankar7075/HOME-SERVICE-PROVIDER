@@ -467,7 +467,7 @@ if (!user || !profile) {
                   <Grid item xs={12} sm={6} md={4} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     {profile.profile?.image ? (
                       <Avatar 
-                        src={profile.profile.image} // <-- UPDATED
+                        src={profile.profile.image} 
                         sx={{ width: 100, height: 100 }}
                         onError={(e) => {
                           console.error('Failed to load profile image:', profile.profile.image);

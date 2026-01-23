@@ -83,8 +83,8 @@ const CustomerManagement = () => {
           .filter((user) => user.role === "customer")
           .map((user) => ({
             ...user,
-            phone: user.phone || "Not set", // Ensure phone fallback
-            image: user.profile?.image || `${API_URL}/images/default-user.png`, // <-- UPDATED
+            phone: user.phone || "Not set", 
+            image: user.profile?.image || `${API_URL}/images/default-user.png`, 
             profile: {
               ...user.profile,
               bookedServices: user.profile?.bookedServices
@@ -123,7 +123,7 @@ const CustomerManagement = () => {
               ? {
                   ...data,
                   phone: data.phone || "Not set",
-                  image: data.profile?.image || `${API_URL}/images/default-user.png`, // <-- UPDATED
+                  image: data.profile?.image || `${API_URL}/images/default-user.png`, 
                   profile: {
                     ...data.profile,
                     bookedServices: data.profile?.bookedServices

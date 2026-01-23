@@ -26,8 +26,6 @@ const userSchema = new mongoose.Schema({
   stripeSubscriptionId: {
     type: String,
   },
-
-  // --- NEW FIELDS for Booking Limit Enforcement ---
   currentBookingCount: {
     type: Number,
     default: 0,
@@ -36,7 +34,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
   },
 
-  // --- Profile Fields ---
   profile: {
     skills: [{ type: String, default: [] }],
     availability: { type: String, default: 'Unavailable' },

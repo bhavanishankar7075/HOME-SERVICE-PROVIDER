@@ -50,14 +50,12 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to catch expired tokens (401 error)
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If server says 401 (Unauthorized), the token is dead
     if (error.response && error.response.status === 401) {
       console.log('axiosInstance: Session expired, clearing user state');
-      store.dispatch(clearUser()); // This resets isAuthenticated and token to null
+      store.dispatch(clearUser()); 
     }
     return Promise.reject(error);
   }

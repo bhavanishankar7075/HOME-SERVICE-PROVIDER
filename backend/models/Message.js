@@ -22,14 +22,13 @@ const messageSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['new', 'read', 'replied', 'archived'], // <-- ADDED 'replied'
+    enum: ['new', 'read', 'replied', 'archived'], 
     default: 'new',
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
-  // --- ADDED THIS FIELD TO STORE THE REPLY ---
   adminReply: {
     text: { type: String, trim: true },
     repliedAt: { type: Date },

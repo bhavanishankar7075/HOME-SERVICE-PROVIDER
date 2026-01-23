@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Box, Typography, Button, Paper } from '@mui/material'; // <-- THE FIX: Imported Box and other components
+import { Box, Typography, Button, Paper } from '@mui/material'; 
 import { ReportProblem as ErrorIcon } from '@mui/icons-material';
 
 class ErrorBoundary extends Component {
@@ -9,18 +9,15 @@ class ErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true, error: error };
   }
 
   componentDidCatch(error, errorInfo) {
-    // You can also log the error to an error reporting service
     console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
         <Box 
           sx={{ 

@@ -49,7 +49,6 @@ const Services = () => {
       fetchServices();
     };
 
-    // --- UPDATED REAL-TIME LISTENERS ---
     const handleServiceAdded = (addedService) => {
         setServices(prev => [addedService, ...prev]);
         setMessage({ open: true, text: `A new service was added: ${addedService.name}`, severity: 'info' });
@@ -147,7 +146,6 @@ const Services = () => {
       newService.additionalImages.forEach((img) => {
         if (img.file) formData.append('additionalImages', img.file);
       });
-      // Backend will emit 'serviceAdded'
       await axios.post(`${API_URL}/api/services`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -189,7 +187,7 @@ const Services = () => {
       }
       const retainedImageUrls = editingService.additionalImages
         .filter(img => img.url && !img.file)
-        .map(img => img.url) // <-- UPDATED
+        .map(img => img.url) 
         .filter(url => url);
       if (retainedImageUrls.length > 0) {
         formData.append('retainedImageUrls', JSON.stringify(retainedImageUrls));

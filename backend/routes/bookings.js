@@ -37,8 +37,6 @@ router.put('/:id/reject', authMiddleware(), rejectBooking);
 router.delete('/:id/cancel', authMiddleware(), cancelBooking);
 router.get('/track/:trackingId', authMiddleware(), trackService);
 router.put('/:bookingId/assign-provider', authMiddleware(['admin']), assignProvider);
-
-// NEW: Route for an admin to find suitable providers for a booking
 router.get('/:bookingId/find-providers', authMiddleware(['admin']), findAvailableProviders);
 
 module.exports = router;

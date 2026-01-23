@@ -58,7 +58,6 @@ import AdminLoadingScreen from "../Components/AdminLoadingScreen";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
-// Styled Chip for subscription plan, matching Navbar.jsx styling
 const StyledSubscriptionChip = styled(Chip)(({ theme, subscription }) => ({
   backgroundColor: subscription === 'pro' || subscription === 'elite' ? '#FFD700' : theme.palette.grey[200],
   color: subscription === 'pro' || subscription === 'elite' ? '#000' : theme.palette.text.primary,
@@ -92,7 +91,6 @@ const ProviderManagement = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('ProviderManagement: Providers response:', response.data);
-      // Filter providers client-side to ensure only providers are displayed
       const providers = Array.isArray(response.data) ? response.data.filter(user => user.role === 'provider') : [];
       console.log('ProviderManagement: Filtered providers:', providers);
       setUsers(providers);

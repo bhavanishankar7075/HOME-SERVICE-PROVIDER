@@ -36,7 +36,7 @@ const persistConfig = {
   whitelist: ['auth'],
   debug: true,
   transforms: [logTransform],
-  timeout: 1000, // Add timeout to ensure persistence completes
+  timeout: 1000, // Added timeout to ensure persistence completes
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

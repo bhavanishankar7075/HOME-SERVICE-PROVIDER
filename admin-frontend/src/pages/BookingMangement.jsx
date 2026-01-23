@@ -18,7 +18,6 @@ import AdminLoadingScreen from '../Components/AdminLoadingScreen';
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
-// FINAL Card Component: All cards are now guaranteed to be the exact same size.
 const AdminBookingCard = ({ booking, onAssign, onViewDetails }) => {
     return (
         <Paper 
@@ -30,8 +29,8 @@ const AdminBookingCard = ({ booking, onAssign, onViewDetails }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                boxSizing: 'border-box', // Ensures padding and border are included in the height
-                border: '2px solid red', // <-- TEMPORARY BORDER FOR DEBUGGING. RETAINED AS REQUESTED.
+                boxSizing: 'border-box', 
+                border: '2px solid red', 
             }}
         >
             {/* Top section with info */}
@@ -50,7 +49,6 @@ const AdminBookingCard = ({ booking, onAssign, onViewDetails }) => {
                     alt={booking.service?.name}
                 />
                 <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
-                    {/* DEFINITIVE FIX #1: Service Title is now forced to a single line and truncated. */}
                     <Typography 
                         variant="h5" 
                         component="div" 
@@ -80,7 +78,6 @@ const AdminBookingCard = ({ booking, onAssign, onViewDetails }) => {
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary', mt: 0.5, overflow: 'hidden', flex: 1 }}>
                        <LocationOn sx={{ fontSize: '1.1rem', mr: 1, flexShrink: 0 }} />
-                       {/* DEFINITIVE FIX #2: Address is forced to a single line and truncated. */}
                        <Typography 
                            variant="body2" 
                            title={booking.location} 

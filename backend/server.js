@@ -58,7 +58,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// This ensures we receive the webhook payload as a raw buffer for signature verification.
 app.post('/api/payments/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // This middleware parses JSON for all OTHER routes

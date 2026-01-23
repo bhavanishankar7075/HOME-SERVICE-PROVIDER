@@ -14,7 +14,7 @@ import {
   Stack,
   Paper,
   InputAdornment,
-  Snackbar, // <-- Import Snackbar
+  Snackbar, 
 } from '@mui/material';
 import { EmailOutlined, LockOutlined, Hub as HubIcon } from '@mui/icons-material';
 import adminLoginImage from '../assets/service-hub-logo.png';
@@ -22,13 +22,11 @@ import adminLoginImage from '../assets/service-hub-logo.png';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function AdminVerifyOTP() {
-  // --- All your existing logic remains untouched ---
   const [otp, setOtp] = useState('');
   const [localError, setLocalError] = useState('');
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(60);
   
-  // --- State for the new Snackbar notification ---
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
   const dispatch = useDispatch();
@@ -100,7 +98,6 @@ function AdminVerifyOTP() {
       await axios.post(`${API_URL}/api/auth/admin-resend-otp`, { email }, { withCredentials: true });
       setResendDisabled(true);
       setResendCountdown(60);
-      // **FIX**: Replace alert with Snackbar
       setSnackbar({ open: true, message: 'A new OTP has been sent to your email.' });
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
@@ -114,8 +111,6 @@ function AdminVerifyOTP() {
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-
-  // --- DESIGN FIXES ARE APPLIED BELOW ---
   return (
     <Box
       sx={{

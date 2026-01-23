@@ -1,29 +1,28 @@
 import React from 'react';
 import { Paper, Box, Typography, Avatar } from '@mui/material';
 
-// This is our new, modern metric card component
 const DashboardMetricCard = ({ icon, title, value, color = 'primary' }) => {
   return (
     <Paper
       elevation={4}
       sx={{
         p: 3,
-        borderRadius: '16px', // More rounded corners for a modern look
+        borderRadius: '16px', 
         display: 'flex',
         alignItems: 'center',
         gap: 2,
         height: '100%',
         transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
         '&:hover': {
-          transform: 'translateY(-5px)', // Subtle lift effect on hover
+          transform: 'translateY(-5px)', 
           boxShadow: '0 12px 20px -10px rgba(0, 0, 0, 0.2)',
         },
       }}
     >
       <Avatar
         sx={{
-          bgcolor: `${color}.light`, // Use the light shade of the chosen color
-          color: `${color}.main`,   // Use the main shade for the icon
+          bgcolor: `${color}.light`, 
+          color: `${color}.main`,  
           width: 60,
           height: 60,
         }}

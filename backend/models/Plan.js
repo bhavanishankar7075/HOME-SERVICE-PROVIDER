@@ -31,16 +31,11 @@ const planSchema = new mongoose.Schema({
       required: true,
     }
   ],
-
-  // --- NEW FIELD START ---
-  // This field defines the number of bookings a provider on this plan can accept per month.
-  // A value of 0 will mean 'unlimited'.
   bookingLimit: {
     type: Number,
     required: true,
     default: 5, // Default limit for new plans, can be changed by admin.
   },
-  // --- NEW FIELD END ---
 
 }, { timestamps: true });
 

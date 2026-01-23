@@ -63,8 +63,6 @@ const AdminSignup = () => {
       dispatch(setLoading(false));
     }
   };
-
-  // --- DESIGN FIXES ARE APPLIED BELOW ---
   return (
     <Box
       sx={{
@@ -82,7 +80,6 @@ const AdminSignup = () => {
           gridTemplateColumns: { md: '1fr 1fr' },
           borderRadius: 4,
           overflow: 'hidden',
-          // **FIX**: Make the Paper fill the padded Box
           width: '100%',
           height: '100%',
         }}

@@ -11,9 +11,8 @@ const {
   getServiceAvailability,
 } = require('../controllers/serviceController');
 const multer = require('multer');
-const { storage } = require('../config/cloudinary'); // <-- 1. IMPORT Cloudinary storage
+const { storage } = require('../config/cloudinary'); 
 
-// <-- 2. REMOVED the old multer.diskStorage and fileFilter configuration
 
 // 3. CONFIGURE multer to use the new Cloudinary storage engine -->
 const upload = multer({

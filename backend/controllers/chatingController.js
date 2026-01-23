@@ -7,14 +7,11 @@ const Service = require('../models/Service');
 const Feedback = require('../models/Feedback');
 const mongoose = require('mongoose');
 
-/* const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" }); */
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-// keep variable name "model"
 const model = {
   generateContent: async (prompt) => {
     const response = await genAI.models.generateContent({
@@ -82,122 +79,6 @@ const getOrCreateConversation = asyncHandler(async (req, res) => {
         messages: messages.map(msg => ({ sender: msg.sender, text: msg.text, createdAt: msg.createdAt }))
     });
 });
-
-/* const postMessage = asyncHandler(async (req, res) => {
-    const { conversationId, text } = req.body;
-    const userId = req.user._id;
-
-    if (!mongoose.isValidObjectId(conversationId) || !text) {
-        res.status(400);
-        throw new Error('Valid Conversation ID and text are required.');
-    }
-
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation || conversation.userId.toString() !== userId.toString()) {
-        res.status(403);
-        throw new Error('Invalid or unauthorized conversation.');
-    }
-
-    const userMessage = await Chating.create({ conversationId, sender: 'user', text });
-
-    if (global.io) {
-        global.io.to(conversation.userId.toString()).emit('newMessage', {
-            sender: userMessage.sender,
-            text: userMessage.text,
-            createdAt: userMessage.createdAt
-        });
-        global.io.to('admin_room').emit('newUserMessage', {
-            conversationId,
-            message: { sender: userMessage.sender, text: userMessage.text, createdAt: userMessage.createdAt }
-        });
-    }
-
-    // Check if admin is active or user requests human assistance
-    if (conversation.adminActive || text.toLowerCase().includes('talk to a human') || text.toLowerCase().includes('speak to an agent')) {
-        conversation.adminActive = true;
-        conversation.status = 'needs_attention';
-        await conversation.populate('userId', 'name email');
-        await conversation.save();
-
-        const aiMessageText = conversation.adminActive
-            ? "Your message has been sent to the admin. They will respond shortly."
-            : "I've flagged this conversation for a human admin. They will join the chat shortly.";
-        const aiMessage = await Chating.create({ conversationId, sender: 'model', text: aiMessageText });
-
-        if (global.io) {
-            global.io.to(userId.toString()).emit('newMessage', {
-                sender: aiMessage.sender,
-                text: aiMessage.text,
-                createdAt: aiMessage.createdAt
-            });
-            global.io.to('admin_room').emit('chatNeedsAttention', conversation);
-        }
-        return res.status(201).json({
-            sender: aiMessage.sender,
-            text: aiMessage.text,
-            createdAt: aiMessage.createdAt
-        });
-    }
-
-    // Handle general queries with AI
-    const knowledgeBase = await buildKnowledgeBase();
-    const history = await Chating.find({ conversationId }).sort({ createdAt: 'asc' });
-
-    const chatHistoryForAI = [
-        { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Yes, I am ServiceHub Assistant. How can I help you today?" }] },
-        ...history.map(msg => ({
-            role: msg.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-        }))
-    ];
-
-    try {
-        const chat = model.startChat({
-            history: chatHistoryForAI,
-            generationConfig: { maxOutputTokens: 200 },
-        });
-
-        const result = await chat.sendMessage(text);
-        const aiResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-        const aiMessage = await Chating.create({ conversationId, sender: 'model', text: aiResponse });
-
-        if (global.io) {
-            global.io.to(userId.toString()).emit('newMessage', {
-                sender: aiMessage.sender,
-                text: aiMessage.text,
-                createdAt: aiMessage.createdAt
-            });
-        }
-
-        res.status(201).json({
-            sender: aiMessage.sender,
-            text: aiMessage.text,
-            createdAt: aiMessage.createdAt
-        });
-    } catch (error) {
-        console.error("Gemini API Error:", error.message);
-        const errorMessage = await Chating.create({
-            conversationId,
-            sender: 'model',
-            text: "Sorry, the AI service is temporarily unavailable. Please try again later.",
-            createdAt: new Date()
-        });
-        if (global.io) {
-            global.io.to(userId.toString()).emit('newMessage', {
-                sender: errorMessage.sender,
-                text: errorMessage.text,
-                createdAt: errorMessage.createdAt
-            });
-        }
-        res.status(500).json({
-            sender: errorMessage.sender,
-            text: errorMessage.text,
-            createdAt: errorMessage.createdAt
-        });
-    }
-}); */
-
 
 
 const postMessage = asyncHandler(async (req, res) => {
@@ -363,11 +244,6 @@ Rules:
         });
     }
 });
-
-
-
-
-
 
 const getAllConversations = asyncHandler(async (req, res) => {
     const conversations = await Conversation.find({})

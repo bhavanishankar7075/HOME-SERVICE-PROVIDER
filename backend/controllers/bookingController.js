@@ -4,7 +4,7 @@ const Service = require('../models/Service');
 const User = require('../models/User');
 const Joi = require('joi');
 const mongoose = require('mongoose');
-const axios = require('axios'); // Ensure axios is imported
+const axios = require('axios'); 
 // In-memory cache for Distance Matrix results (consider Redis for persistence)
 const distanceCache = new Map();
 
@@ -27,8 +27,7 @@ const bookingValidationSchema = Joi.object({
   }),
   isImmediate: Joi.boolean().optional(),
 
-  // --- FIX IS HERE ---
-  // We've added timeSlot to the list of allowed fields.
+
   timeSlot: Joi.string()
     .pattern(new RegExp('^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')) // Validates HH:mm format
     .optional() // Makes the field optional

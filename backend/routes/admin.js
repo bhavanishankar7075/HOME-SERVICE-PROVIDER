@@ -155,7 +155,6 @@ router.post('/providers/:providerId/cancel-subscription', [
   param('providerId').isMongoId().withMessage('Invalid provider ID'),
 ], cancelProviderSubscription);
 
-// Add route for assigning a provider to a booking
 router.post('/bookings/:bookingId/assign-provider', [
   authMiddleware(['admin']),
   param('bookingId').isMongoId().withMessage('Invalid booking ID'),

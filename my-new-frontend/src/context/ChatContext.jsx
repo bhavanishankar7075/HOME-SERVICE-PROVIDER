@@ -18,7 +18,6 @@ export const ChatProvider = ({ children }) => {
     const [conversationStatus, setConversationStatus] = useState('open');
     const [isTyping, setIsTyping] = useState(false);
     const [adminActive, setAdminActive] = useState(false);
-    // FIX 1: Add state to track if there's a new, unread message.
     const [hasNewMessage, setHasNewMessage] = useState(false);
     const { token, user } = useSelector(state => state.auth);
 
@@ -71,8 +70,6 @@ export const ChatProvider = ({ children }) => {
 
             const handleNewMessage = (message) => {
                 console.log('New message received:', message);
-
-                // FIX 2: Check if the chat is closed. If so, set the notification state.
                 if (!isChatOpen) {
                     setHasNewMessage(true);
                 }
@@ -119,7 +116,6 @@ export const ChatProvider = ({ children }) => {
                 socket.emit('leaveRoom', user?._id);
             };
         }
-        // By adding isChatOpen here, the socket listener will always have the latest value.
     }, [user?._id, conversationId, isChatOpen]);
 
     const sendMessage = async (text) => {
@@ -160,7 +156,6 @@ export const ChatProvider = ({ children }) => {
         conversationStatus,
         isTyping,
         adminActive,
-        // FIX 3: Export the new state and its setter for the widget to use.
         hasNewMessage,
         setHasNewMessage
     };

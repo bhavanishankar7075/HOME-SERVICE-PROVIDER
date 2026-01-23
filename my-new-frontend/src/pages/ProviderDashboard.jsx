@@ -530,7 +530,7 @@ if (loading && !profile) {
               <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {profile.profile?.image ? (
                   <Avatar 
-                    src={profile.profile.image} // <-- UPDATED
+                    src={profile.profile.image} 
                     sx={{ width: 150, height: 150 }} 
                     onError={(e) => {
                       console.error('Failed to load provider image:', profile.profile.image);
@@ -628,7 +628,7 @@ if (loading && !profile) {
           </Box>
           {filteredWorkHistory.length > 0 ? (
             filteredWorkHistory.map((work) => {
-              const customerImageUrl = work.customer?.profile?.image || null; // <-- UPDATED
+              const customerImageUrl = work.customer?.profile?.image || null; 
               console.log('Work History Debug:', {
                 bookingId: work._id,
                 customerId: work.customer?._id,

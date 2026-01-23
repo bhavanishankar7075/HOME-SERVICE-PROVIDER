@@ -94,11 +94,6 @@ const FooterComponent = () => {
     <Box
       component="footer"
       sx={{
-        // NOTE ON FLICKERING: For `mt: 'auto'` to work correctly and prevent the footer
-        // from appearing at the top on load, the parent container of this footer 
-        // (likely in your App.jsx) should have a style of:
-        // { display: 'flex', flexDirection: 'column', minHeight: '100vh' }
-        // The main content area should have `flexGrow: 1`.
         background: blackTheme.palette.background.paper,
         color: 'text.secondary',
         py: { xs: 5, sm: 8 },
@@ -141,12 +136,6 @@ const FooterComponent = () => {
             ))}
           </Stack>
         </Grid>
-
-        {/* =================================================================================
-          * DESIGN FIX: IPAD LAYOUT
-          * Adjusted grid columns for tablet screens (`sm`) to give more space
-          * to the "Contact Us" section and prevent content overlap.
-          * ================================================================================= */}
         <Grid item xs={6} sm={3} md={2}>
           <Typography variant="h6" color="text.primary" gutterBottom>
             Navigate
@@ -177,7 +166,6 @@ const FooterComponent = () => {
           <Stack spacing={2}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <EmailIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
-              {/* DESIGN FIX: Added wordBreak to prevent long emails from overflowing */}
               <Link href="mailto:support@homeserviceprovider.com" color="inherit" underline="none" sx={{ wordBreak: 'break-all' }}>
                 support@homeserviceprovider.com
               </Link>

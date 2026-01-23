@@ -8,7 +8,6 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // @route   POST /api/plans
 // @access  Private/Admin
 const createPlan = asyncHandler(async (req, res) => {
-  // --- UPDATED: Now accepts 'bookingLimit' from the request body ---
   const { name, price, currency, features, bookingLimit } = req.body;
 
   if (!name || price === undefined || !features || !Array.isArray(features) || features.length === 0 || bookingLimit === undefined) {

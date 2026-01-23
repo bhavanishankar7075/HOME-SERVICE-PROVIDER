@@ -5,11 +5,9 @@ const Plan = require('../models/Plan');
 const multer = require('multer');
 const axios = require('axios');
 const bcrypt = require('bcrypt');
-const { storage } = require('../config/cloudinary'); //  <-- 1. IMPORT CLOUDINARY STORAGE
-
+const { storage } = require('../config/cloudinary'); 
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
-//  <-- 2. REMOVED the old multer.diskStorage configuration
 
 // Use the new Cloudinary storage for multer
 const upload = multer({ storage });

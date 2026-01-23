@@ -24,7 +24,6 @@ const serviceSchema = new mongoose.Schema({
   feedbackCount: { type: Number, default: 0 },
 }, { timestamps: true });
 
-// Add index for provider queries
 serviceSchema.index({ createdBy: 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);

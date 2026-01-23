@@ -3,7 +3,7 @@ const Service = require('../models/Service');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Joi = require('joi');
-const { cloudinary } = require('../config/cloudinary'); // <-- 1. IMPORT CLOUDINARY
+const { cloudinary } = require('../config/cloudinary'); 
 
 const serviceSchema = Joi.object({
   name: Joi.string().required().messages({
@@ -32,13 +32,9 @@ const serviceSchema = Joi.object({
 }).unknown(true);
 
 
-// <-- 2. REPLACED old deleteFile function with Cloudinary version
 const deleteFileFromCloudinary = async (imageUrl) => {
   try {
     if (!imageUrl) return;
-    // Extract the public_id from the full URL.
-    // Example URL: https://res.cloudinary.com/demo/image/upload/v123/folder/image.jpg
-    // public_id is: folder/image
     const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
     await cloudinary.uploader.destroy(publicId);
     console.log(`Deleted image from Cloudinary: ${publicId}`);
@@ -56,9 +52,7 @@ const createService = [
     }
 
     const { name, description, price, category, offer, deal } = req.body;
-    
-    // <-- 3. UPDATED to get full path from Cloudinary
-    const image = req.files?.image ? req.files.image[0].path : '';
+        const image = req.files?.image ? req.files.image[0].path : '';
     const additionalImages = req.files?.additionalImages
       ? req.files.additionalImages.map(file => file.path)
       : [];

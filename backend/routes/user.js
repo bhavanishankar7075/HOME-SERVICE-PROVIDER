@@ -12,12 +12,11 @@ const {
   toggleAvailability,
   contactAdmin,
   getCustomerMessages,
-  getSubscriptionDetails // Already included in previous update
+  getSubscriptionDetails 
 } = require('../controllers/userController');
 
 const { resetPassword } = require('../controllers/authController');
 
-// Import express-validator functions
 const { param, body } = require('express-validator');
 const mongoose = require('mongoose');
 
@@ -100,7 +99,6 @@ router.put('/profile/:userId/toggle-availability', [
 
 router.post('/reset-password', resetPassword);
 
-// Route for subscription details (already included)
 router.get('/subscription-details', authMiddleware(['provider']), getSubscriptionDetails);
 
 module.exports = router;

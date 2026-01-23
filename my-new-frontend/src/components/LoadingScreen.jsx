@@ -65,7 +65,7 @@ const LoadingScreen = ({ title, message }) => {
     left: 0,
     width: '100vw',
     height: '100vh',
-    zIndex: 9999, // Ensures it's on top of all other content
+    zIndex: 9999,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -111,7 +111,6 @@ const LoadingScreen = ({ title, message }) => {
             />
           ))}
 
-          {/* Your Service Hub Logo - revealed after the orbs */}
           <Box
             component="img"
             src={serviceHubLogo}

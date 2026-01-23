@@ -1,6 +1,4 @@
-
- // src/hooks/useSocketManager.js
-
+// src/hooks/useSocketManager.js
 import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import io from 'socket.io-client';
@@ -8,9 +6,8 @@ import { setUser } from '../redux/authSlice';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// Create a single, persistent socket instance for the entire app
 const socket = io(API_URL, {
-  autoConnect: false, // We will connect manually
+  autoConnect: false, 
   reconnection: true,
   reconnectionDelay: 1000,
 });

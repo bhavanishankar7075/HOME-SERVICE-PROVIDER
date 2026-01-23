@@ -28,11 +28,7 @@ const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const socket = io(API_URL);
 const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
-// =================================================================================
-// DESIGN FIX 3: IMAGE SKELETON LOADER
-// This new component shows a skeleton animation while the image is loading,
-// improving the user experience.
-// =================================================================================
+
 const ImageWithSkeleton = ({ src, alt, height }) => {
     const [loading, setLoading] = useState(true);
   
@@ -325,11 +321,6 @@ const Services = () => {
     <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', pt: 8 }}>
       {scrollbarStyles}
       <Box component="main" sx={{ flexGrow: 1, px: { xs: 2, sm: 4, lg: 6 }, py: 6 }}>
-        {/* =================================================================================
-          * DESIGN FIX 2: SERVICE CATEGORY 2x2 GRID
-          * Replaced Chips with styled Paper components for a better look.
-          * Used .slice(0, 4) to display only the first four categories, creating a 2x2 grid.
-          * ================================================================================= */}
         <Box component="section" sx={{ py: 4, bgcolor: 'white', borderRadius: 4, boxShadow: 2, mb: 6 }}>
           <Container maxWidth="lg">
             <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, fontWeight: 'bold', textAlign: 'center', color: '#1F2937', mb: 4 }}>
@@ -495,7 +486,6 @@ const Services = () => {
                         {service.description.substring(0, 80)}{service.description.length > 80 && '...'}
                       </Typography>
                     </CardContent>
-                    {/* DESIGN FIX 1 (APPLIED HERE AS WELL) */}
                     <CardActions sx={{ 
                         p: 2, flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'space-between', 
                         gap: { xs: 1.5, sm: 1 }, width: '100%', bgcolor: '#F9FAFB' 
@@ -567,10 +557,6 @@ const Services = () => {
             pt: 3,
             pb: 2,
             bgcolor: '#F9FAFB',
-            /* overflowY: activeStep === 2 ? 'auto' : 'hidden',
-            scrollbarWidth: 'none', // Firefox
-            '&::-webkit-scrollbar': { display: 'none' }, // Chrome, Safari
-            '-ms-overflow-style': 'none', // IE, Edge */
             minHeight: { lg: activeStep === 2 ? '400px' : 'auto' },
             className: 'custom-scrollbar' // Ensure enough space for Payment step
           }}>

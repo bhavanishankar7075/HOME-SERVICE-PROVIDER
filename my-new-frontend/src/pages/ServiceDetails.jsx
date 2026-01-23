@@ -1170,7 +1170,7 @@ const ServiceDetails = () => {
             // This ensures the dialog itself can contain the fixed and scrolling parts
             display: "flex",
             flexDirection: "column",
-            maxHeight: "90vh", // Prevent dialog from being taller than the screen
+            maxHeight: "90vh", 
           },
         }}
       >
@@ -1186,9 +1186,6 @@ const ServiceDetails = () => {
           Confirm Booking: {service?.name || "Service"}
         </DialogTitle>
 
-        {/* STEP 1: Remove padding from DialogContent. It will only serve as a container.
-        We add flex properties to ensure it grows and shrinks properly.
-      */}
         <DialogContent
           sx={{
             p: 0,
@@ -1209,12 +1206,6 @@ const ServiceDetails = () => {
               <StepLabel>Confirmed</StepLabel>
             </Step>
           </Stepper>
-
-          {/* STEP 2: Create a new <Box> to be the scrollable container.
-          - overflowY: 'auto' -> shows scrollbar only when needed.
-          - p: 3 -> adds padding INSIDE the scrollable area.
-          - This Box now holds ALL the content that might get too long.
-        */}
           <Box sx={{ overflowY: "auto", p: 3, pt: 0 }}>
             {bookingError && (
               <Alert severity="error" sx={{ mb: 2 }}>

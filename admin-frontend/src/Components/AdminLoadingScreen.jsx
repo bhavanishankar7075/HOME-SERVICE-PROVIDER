@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, keyframes } from '@mui/material';
-import serviceHubLogo from '../assets/service-hub-logo.png'; // Ensure your logo path is correct
+import serviceHubLogo from '../assets/service-hub-logo.png'; 
 
 // Keyframes for the orbs spiraling in with more impact
 const orbit = keyframes`
@@ -102,11 +102,11 @@ const AdminLoadingScreen = ({ message = 'Loading...' }) => {
                 left: '50%',
                 width: '10px',
                 height: '10px',
-                bgcolor: '#4F46E5', // Your primary brand color
+                bgcolor: '#4F46E5', 
                 borderRadius: '50%',
-                animation: `${orbit} 1.8s forwards`, // 'forwards' stops it at the end
+                animation: `${orbit} 1.8s forwards`, 
                 animationDelay: `${delay}s`,
-                opacity: 0, // Start hidden, animation will make it visible
+                opacity: 0, 
               }}
             />
           ))}

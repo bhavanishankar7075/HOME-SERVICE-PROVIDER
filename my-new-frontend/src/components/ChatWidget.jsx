@@ -2,16 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Paper, Typography, TextField, IconButton, Fab, Stack, Avatar, Badge } from '@mui/material';
 import { keyframes } from '@mui/system';
 import { Send as SendIcon, Chat as ChatIcon, Close as CloseIcon } from '@mui/icons-material';
-import { useChat } from '../context/ChatContext'; // Your existing context hook
-import logo from '../assets/service-hub-logo.png'; // Your existing logo path
+import { useChat } from '../context/ChatContext'; 
+import logo from '../assets/service-hub-logo.png'; 
 
-// Animation for the typing indicator
 const bounce = keyframes`
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
 `;
 
-// === NEW ANIMATION FOR A VISIBLE NOTIFICATION DOT ===
 const ping = keyframes`
   75%, 100% {
     transform: scale(2.5);
@@ -95,13 +93,11 @@ const ChatWidget = () => {
                     right: 32,
                     zIndex: 1300,
                     display: isChatOpen ? 'none' : 'block',
-                    // === VISIBILITY FIX APPLIED HERE ===
                     '& .MuiBadge-dot': {
                         width: 12,
                         height: 12,
                         borderRadius: '50%',
                         border: '2px solid white',
-                        // The animated "ping" effect
                         '&::after': {
                             position: 'absolute',
                             top: '-1px',

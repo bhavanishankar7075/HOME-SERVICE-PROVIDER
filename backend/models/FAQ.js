@@ -22,6 +22,6 @@ const faqSchema = new mongoose.Schema({
   },
 });
 
-faqSchema.index({ question: 'text', answer: 'text' }); // Enable text search
+faqSchema.index({ question: 'text', answer: 'text' }); 
 
 module.exports = mongoose.model('FAQ', faqSchema);
