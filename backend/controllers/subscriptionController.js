@@ -20,11 +20,11 @@ const createSubscriptionSession = asyncHandler(async (req, res) => {
     line_items: [{ price: priceId, quantity: 1 }],
     client_reference_id: user._id.toString(),
     customer_email: user.email,
-/*     success_url: `${process.env.API_URL || 'http://localhost:5174'}/providerhome?subscription_success=true&session_id={CHECKOUT_SESSION_ID}`,
+     success_url: `${process.env.API_URL || 'http://localhost:5174'}/providerhome?subscription_success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.API_URL || 'http://localhost:5174'}/pricing`,
- */  
-success_url: `${process.env.FRONTEND_URL}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
-cancel_url: `${process.env.FRONTEND_URL}/pricing`,
+   
+/* success_url: `${process.env.FRONTEND_URL}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+cancel_url: `${process.env.FRONTEND_URL}/pricing`, */
 
 
   });
@@ -49,11 +49,11 @@ const createCustomerPortalSession = asyncHandler(async (req, res) => {
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
-/*     return_url: `${process.env.API_URL || 'http://localhost:5174'}/providerhome?action=subscription_managed`,
- */ 
+     return_url: `${process.env.API_URL || 'http://localhost:5174'}/providerhome?action=subscription_managed`,
+ 
 
-return_url: `${process.env.FRONTEND_URL}/providerhome?action=subscription_managed`,
-
+/* return_url: `${process.env.FRONTEND_URL}/providerhome?action=subscription_managed`,
+ */
 
 
 });
