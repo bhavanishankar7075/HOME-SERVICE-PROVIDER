@@ -40,6 +40,7 @@ import { useSocketManager } from './hooks/useSocketManager';
 import LoadingScreen from './components/LoadingScreen';
 import ScrollToTop from './components/ScrollToTop';
 import { Box, CssBaseline } from '@mui/material';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
 
 // --- No changes to FooterWrapper ---
 const FooterWrapper = () => {
@@ -77,6 +78,7 @@ const AnimatedRoutes = () => {
         <Route path="/my-messages" element={<ProtectedRoute><PageTransition><CustomerMessages /></PageTransition></ProtectedRoute>} />
         <Route path="/bookings" element={<ProtectedRoute><PageTransition><Booking /></PageTransition></ProtectedRoute>} />
         <Route path="/pricing" element={<ProtectedRoute><PageTransition><PricingPage /></PageTransition></ProtectedRoute>} />
+        <Route path="/subscription-success" element={<SubscriptionSuccess />} />
       </Routes>
     </AnimatePresence>
   );
