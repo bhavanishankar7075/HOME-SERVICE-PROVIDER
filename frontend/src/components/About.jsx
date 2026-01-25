@@ -201,6 +201,7 @@ const About = () => {
           </motion.div>
         </Grid>
       </Grid>
+      <br />
       <Footer/>
     </Container>
   );

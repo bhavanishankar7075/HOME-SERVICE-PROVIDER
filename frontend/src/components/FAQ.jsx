@@ -5,6 +5,8 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Footer from './Footer'
+
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -111,6 +113,8 @@ const FAQ = () => {
           </Box>
         </Grid>
       </Grid>
+      <br />
+      <Footer/>
     </Container>
   );
 };

@@ -45,12 +45,18 @@ function PricingPage() {
 
       dispatch(setUser({ user: profileRes.data, token }));
 
-      const freePlan = {
-        name: 'Basic',
-        price: 0,
-        features: ['Standard support', '20% commission rate'],
-        bookingLimit: 5,
-      };
+    const freePlan = {
+  name: 'Basic',
+  price: 0,
+  bookingLimit: 5,
+  features: [
+    'Default plan for all providers',
+    '5 service bookings per month',
+    'Standard support',
+    '100% service amount goes to provider',
+  ],
+};
+
 
       setPlans([freePlan, ...plansRes.data]);
       setSubscriptionDetails(subscriptionRes.data);
