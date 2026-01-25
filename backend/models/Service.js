@@ -15,6 +15,10 @@ const serviceSchema = new mongoose.Schema({
   
   offer: { type: String, default: '' },
   deal: { type: String, default: '' },
+  isAvailable: {                 // ✅ NEW
+    type: Boolean,
+    default: true,
+  },
   availableSlots: { 
     type: Map, 
     of: [String],

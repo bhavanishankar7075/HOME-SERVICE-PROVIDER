@@ -167,7 +167,7 @@ const ServiceDetails = () => {
             : {};
           const { data } = await axios.get(
             `${API_URL}/api/feedback?serviceId=${id}`,
-            config
+            config,
           );
           console.log("Feedbacks fetched:", data);
           setFeedbacks(data);
@@ -175,12 +175,12 @@ const ServiceDetails = () => {
           console.error(
             "Failed to fetch feedbacks:",
             error.message,
-            error.response?.data
+            error.response?.data,
           );
           setFeedbackError(
             error.response?.status === 401
               ? "Please log in to view feedback"
-              : "Failed to load feedback"
+              : "Failed to load feedback",
           );
           setFeedbacks([]);
         } finally {
@@ -191,7 +191,7 @@ const ServiceDetails = () => {
       const fetchFaqs = async () => {
         try {
           const { data } = await axios.get(
-            `${API_URL}/api/faqs?serviceId=${id}`
+            `${API_URL}/api/faqs?serviceId=${id}`,
           );
           setFaqs(data);
         } catch (error) {
@@ -244,14 +244,14 @@ const ServiceDetails = () => {
       setContactForm({ name: "", email: "", message: "" });
     } catch (error) {
       setContactError(
-        error.response?.data?.message || "Failed to send message"
+        error.response?.data?.message || "Failed to send message",
       );
     } finally {
       setContactLoading(false);
     }
   };
 
-  const handleOpenBooking = () => {
+  /*   const handleOpenBooking = () => {
     if (!token) return navigate("/login");
     setBookingData({
       location: user?.profile?.location?.fullAddress || userLocation || "",
@@ -260,6 +260,36 @@ const ServiceDetails = () => {
     setBookingError("");
     setClientSecret("");
     setPaymentMethod("Stripe");
+    setBookingModalOpen(true);
+  }; */
+
+  const handleOpenBooking = () => {
+    // ❌ Block booking if service is unavailable
+    if (!service?.isAvailable) {
+      setBookingError(
+        "This service is currently unavailable. Please try again later.",
+      );
+      return;
+    }
+
+    // 🔐 Redirect if user is not logged in
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // ✅ Prepare booking data
+    setBookingData({
+      location: user?.profile?.location?.fullAddress || userLocation || "",
+    });
+
+    // ✅ Reset booking flow
+    setActiveStep(0);
+    setBookingError("");
+    setClientSecret("");
+    setPaymentMethod("Stripe");
+
+    // ✅ Open booking modal
     setBookingModalOpen(true);
   };
 
@@ -285,7 +315,7 @@ const ServiceDetails = () => {
         bookingPayload,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       const createdBooking = bookingRes.data;
 
@@ -295,7 +325,7 @@ const ServiceDetails = () => {
           { bookingId: createdBooking._id },
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         setActiveStep(2);
       } else if (paymentMethod === "Stripe") {
@@ -304,14 +334,14 @@ const ServiceDetails = () => {
           { bookingId: createdBooking._id },
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         setClientSecret(intentRes.data.clientSecret);
         setActiveStep(1);
       }
     } catch (error) {
       setBookingError(
-        error.response?.data?.message || "An unexpected error occurred."
+        error.response?.data?.message || "An unexpected error occurred.",
       );
     } finally {
       setBookingLoading(false);
@@ -352,7 +382,7 @@ const ServiceDetails = () => {
           position: "relative",
           height: { xs: "60vh", md: "70vh" },
           background: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.3)), url(${getImageUrl(
-            service.image
+            service.image,
           )})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -388,7 +418,7 @@ const ServiceDetails = () => {
           >
             Experience top-quality service with our verified professionals!
           </Typography>
-          <Button
+          {/*  <Button
             variant="contained"
             size="large"
             onClick={handleOpenBooking}
@@ -401,6 +431,24 @@ const ServiceDetails = () => {
             }}
           >
             Book Now
+          </Button> */}
+
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleOpenBooking}
+            disabled={!service.isAvailable}
+            sx={{
+              bgcolor: service.isAvailable ? "#4F46E5" : "#9CA3AF",
+              "&:hover": {
+                bgcolor: service.isAvailable ? "#4338CA" : "#9CA3AF",
+              },
+              px: 4,
+              py: 1.5,
+              fontSize: "1rem",
+            }}
+          >
+            {service.isAvailable ? "Book Now" : "Unavailable"}
           </Button>
         </Box>
       </Box>
@@ -439,14 +487,32 @@ const ServiceDetails = () => {
                     ({(service.averageRating || 0).toFixed(1)}/5,{" "}
                     {service.feedbackCount || 0} reviews)
                   </Typography>
-                  <Chip
+                  {/*  <Chip
                     label={service.category}
                     sx={{
                       bgcolor: "#4F46E5",
                       color: "white",
                       "&:hover": { bgcolor: "#4338CA" },
                     }}
-                  />
+                  /> */}
+
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Chip
+                      label={service.category}
+                      sx={{
+                        bgcolor: "#4F46E5",
+                        color: "white",
+                      }}
+                    />
+
+                    {!service.isAvailable && (
+                      <Chip
+                        label="Unavailable"
+                        color="error"
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
                 </Box>
               </Box>
             </Grow>
@@ -676,7 +742,7 @@ const ServiceDetails = () => {
                           >
                             <Avatar
                               src={getImageUrl(
-                                feedback.bookingId?.customer?.profile?.image
+                                feedback.bookingId?.customer?.profile?.image,
                               )}
                               alt={feedback.bookingId?.customer?.name}
                               sx={{ width: 48, height: 48, mr: 2 }}
@@ -1040,7 +1106,7 @@ const ServiceDetails = () => {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Button
+              {/*  <Button
                 fullWidth
                 variant="contained"
                 size="large"
@@ -1053,7 +1119,26 @@ const ServiceDetails = () => {
                 }}
               >
                 Book Now
+              </Button> */}
+
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleOpenBooking}
+                disabled={!service.isAvailable}
+                sx={{
+                  py: 1.5,
+                  fontWeight: "bold",
+                  bgcolor: service.isAvailable ? "#4F46E5" : "#9CA3AF",
+                  "&:hover": {
+                    bgcolor: service.isAvailable ? "#4338CA" : "#9CA3AF",
+                  },
+                }}
+              >
+                {service.isAvailable ? "Book Now" : "Unavailable"}
               </Button>
+
               <Divider sx={{ my: 3 }} />
               <List dense>
                 <ListItem>
@@ -1170,7 +1255,7 @@ const ServiceDetails = () => {
             // This ensures the dialog itself can contain the fixed and scrolling parts
             display: "flex",
             flexDirection: "column",
-            maxHeight: "90vh", 
+            maxHeight: "90vh",
           },
         }}
       >

@@ -53,7 +53,7 @@ app.use(cors({
     'https://home-service-provider-backend.onrender.com',
     'https://home-service-provider-frontend.onrender.com',
     'https://home-service-provider-admin.onrender.com'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
@@ -114,7 +114,7 @@ const io = new Server(server, {
       'https://home-service-provider-backend.onrender.com',
       'https://home-service-provider-frontend.onrender.com',
       'https://home-service-provider-admin.onrender.com'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   },

@@ -24,6 +24,8 @@ const serviceSchema = Joi.object({
   }),
   offer: Joi.string().allow('').optional(),
   deal: Joi.string().allow('').optional(),
+isAvailable: Joi.boolean().optional(),
+
   retainedImageUrls: Joi.array().items(Joi.string()).optional(),
   
   availableSlots: Joi.object().pattern(Joi.string(), Joi.array().items(Joi.string())).optional().messages({
@@ -67,6 +69,7 @@ const createService = [
       additionalImages,
       offer: offer || '',
       deal: deal || '',
+isAvailable: true, 
       availableSlots: {},
     });
 
@@ -138,7 +141,7 @@ const updateService = [
       return res.status(400).json({ msg: error.details[0].message });
     }
 
-    const { name, description, price, category, offer, deal, retainedImageUrls, availableSlots: availableSlotsInput } = formDataObj;
+    const { name, description, price, category, offer, deal, isAvailable, retainedImageUrls, availableSlots: availableSlotsInput } = formDataObj;
     const service = await Service.findById(req.params.id);
     if (!service) {
       return res.status(404).json({ msg: 'Service not found' });
@@ -147,6 +150,13 @@ const updateService = [
     if (service.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized to update this service' });
     }
+    
+
+
+
+if (typeof isAvailable === 'boolean') {
+  service.isAvailable = isAvailable;
+}
 
     // <-- 4. UPDATED to get full path from Cloudinary
     const newImage = req.files?.image ? req.files.image[0].path : undefined;
@@ -326,6 +336,33 @@ const getServiceAvailability = asyncHandler(async (req, res) => {
   res.json(availableSlots);
 });
 
+
+
+
+const toggleServiceAvailability = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const service = await Service.findById(id);
+  if (!service) {
+    return res.status(404).json({ msg: 'Service not found' });
+  }
+
+  // Toggle availability
+  service.isAvailable = !service.isAvailable;
+  await service.save();
+
+  // Emit socket update
+  if (global.io) {
+    global.io.emit('serviceUpdated', service);
+  }
+
+  res.json({
+    msg: `Service marked as ${service.isAvailable ? 'Available' : 'Unavailable'}`,
+    service,
+  });
+});
+
+
 module.exports = { 
   createService, 
   getServices, 
@@ -334,4 +371,5 @@ module.exports = {
   bulkDeleteServices,
   getFeaturedServices,
   getServiceAvailability,
+  toggleServiceAvailability,
 };

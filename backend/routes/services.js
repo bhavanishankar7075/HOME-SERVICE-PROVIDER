@@ -9,6 +9,7 @@ const {
   bulkDeleteServices,
   getFeaturedServices,
   getServiceAvailability,
+toggleServiceAvailability,
 } = require('../controllers/serviceController');
 const multer = require('multer');
 const { storage } = require('../config/cloudinary'); 
@@ -42,5 +43,6 @@ router.put('/:id', authMiddleware(['admin']), upload, updateService);
 router.delete('/:id', authMiddleware(['admin']), deleteService);
 
 router.post('/bulk-delete', authMiddleware(['admin']), bulkDeleteServices);
+router.patch('/:id/toggle-availability', authMiddleware(['admin']), toggleServiceAvailability);
 
 module.exports = router;
