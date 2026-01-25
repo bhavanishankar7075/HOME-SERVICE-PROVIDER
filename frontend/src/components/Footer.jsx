@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Grid, Link, TextField, Button, IconButton, Snackbar, Alert, Stack, Divider, InputAdornment
+  Box, Typography, Grid, Link, TextField, Button, IconButton, Snackbar, Alert, Stack, Divider, InputAdornment, Container
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { 
@@ -12,22 +12,22 @@ import io from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const blackTheme = createTheme({
+// LIGHT THEME to match your brand colors
+const lightFooterTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#03a9f4',
-      dark: '#0276aa',
+      main: '#4F46E5', // Matching your Home page Indigo
     },
     background: {
-      default: '#000000',
-      paper: 'linear-gradient(180deg, #1C1C1E 0%, #121212 100%)',
+      default: '#ffffff',
+      paper: '#f8f9fa',
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#b0bec5',
+      primary: '#1a1a1b',
+      secondary: '#5f6368',
     },
-    divider: 'rgba(255, 255, 255, 0.12)',
+    divider: 'rgba(0, 0, 0, 0.08)',
   },
   typography: {
     fontFamily: 'Inter, sans-serif',
@@ -56,14 +56,15 @@ const FooterComponent = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
   const [emailError, setEmailError] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 100);
     const socket = io(API_URL, { reconnection: true });
-    socket.on('connect', () => console.log('Footer socket connected'));
-    socket.on('newNewsletterSubscription', ({ email }) => {
-      console.log('Received newNewsletterSubscription:', email);
-    });
-    return () => socket.disconnect();
+    return () => {
+      clearTimeout(timer);
+      socket.disconnect();
+    };
   }, []);
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -79,8 +80,6 @@ const FooterComponent = () => {
       await axios.post(`${API_URL}/api/newsletter`, { email });
       setMessage({ open: true, text: 'Subscribed successfully!', severity: 'success' });
       setEmail('');
-      const socket = io(API_URL);
-      socket.emit('newNewsletterSubscription', { email, subscribedAt: new Date() });
     } catch (error) {
       setMessage({
         open: true,
@@ -94,146 +93,149 @@ const FooterComponent = () => {
     <Box
       component="footer"
       sx={{
-        background: blackTheme.palette.background.paper,
+        background: '#f8f9fa',
         color: 'text.secondary',
         py: { xs: 5, sm: 8 },
         px: { xs: 2, sm: 4 },
-        mt: 'auto',
         borderTop: '1px solid',
         borderColor: 'divider',
+        opacity: isMounted ? 1 : 0,
+        transition: 'opacity 0.5s ease-in-out',
       }}
     >
-      <Grid container spacing={{ xs: 4, md: 5 }} sx={{ maxWidth: '1280px', mx: 'auto' }}>
-        <Grid item xs={12} md={4}>
-          <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
-            <HubIcon color="primary" sx={{ fontSize: 32 }} />
-            <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
-              ServiceHub
+      <Container maxWidth="lg">
+        <Grid container spacing={{ xs: 4, md: 5 }}>
+          <Grid item xs={12} md={4}>
+            <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+              <HubIcon color="primary" sx={{ fontSize: 32 }} />
+              <Typography variant="h5" color="text.primary" sx={{ fontWeight: 700 }}>
+                ServiceHub
+              </Typography>
+            </Stack>
+            <Typography variant="body2" sx={{ lineHeight: 1.7, mb: 3 }}>
+              Connecting you with trusted home service professionals in Visakhapatnam for all your needs.
             </Typography>
-          </Stack>
-          <Typography variant="body2" sx={{ lineHeight: 1.7, mb: 3 }}>
-            Connecting you with trusted home service professionals in Visakhapatnam for all your needs.
-          </Typography>
-          <Stack direction="row" spacing={1.5}>
-            {SOCIAL_LINKS.map((social) => (
-              <IconButton
-                key={social.href}
-                href={social.href}
-                target="_blank"
-                aria-label={social.href}
-                sx={{
-                  color: 'text.secondary',
-                  transition: 'all 0.3s ease',
-                  '&:hover': { 
-                    color: 'primary.main',
-                    transform: 'scale(1.1)',
-                    boxShadow: `0 0 15px ${blackTheme.palette.primary.main}`,
-                  }
-                }}
-              >
-                {social.icon}
-              </IconButton>
-            ))}
-          </Stack>
-        </Grid>
-        <Grid item xs={6} sm={3} md={2}>
-          <Typography variant="h6" color="text.primary" gutterBottom>
-            Navigate
-          </Typography>
-          <Stack spacing={1.5}>
-            {QUICK_LINKS.map((link) => (
-              <Link
-                key={link.path}
-                href="#"
-                onClick={(e) => { e.preventDefault(); navigate(link.path); }}
-                color="inherit"
-                underline="none"
-                sx={{
-                  transition: 'color 0.3s',
-                  '&:hover': { color: 'primary.main' }
-                }}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </Stack>
-        </Grid>
+            <Stack direction="row" spacing={1.5}>
+              {SOCIAL_LINKS.map((social, idx) => (
+                <IconButton
+                  key={idx}
+                  href={social.href}
+                  target="_blank"
+                  sx={{
+                    color: 'text.secondary',
+                    transition: 'all 0.3s ease',
+                    '&:hover': { 
+                      color: 'primary.main',
+                      transform: 'translateY(-3px)',
+                    }
+                  }}
+                >
+                  {social.icon}
+                </IconButton>
+              ))}
+            </Stack>
+          </Grid>
 
-        <Grid item xs={12} sm={5} md={3}>
-          <Typography variant="h6" color="text.primary" gutterBottom>
-            Contact Us
-          </Typography>
-          <Stack spacing={2}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <EmailIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
-              <Link href="mailto:support@homeserviceprovider.com" color="inherit" underline="none" sx={{ wordBreak: 'break-all' }}>
-                support@homeserviceprovider.com
-              </Link>
+          <Grid item xs={6} sm={3} md={2}>
+            <Typography variant="h6" color="text.primary" gutterBottom>
+              Navigate
+            </Typography>
+            <Stack spacing={1.5}>
+              {QUICK_LINKS.map((link) => (
+                <Link
+                  key={link.path}
+                  component="button"
+                  onClick={() => navigate(link.path)}
+                  sx={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    textAlign: 'left',
+                    background: 'none',
+                    border: 'none',
+                    p: 0,
+                    cursor: 'pointer',
+                    transition: 'color 0.3s',
+                    '&:hover': { color: 'primary.main' }
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </Stack>
+          </Grid>
+
+          <Grid item xs={12} sm={5} md={3}>
+            <Typography variant="h6" color="text.primary" gutterBottom>
+              Contact Us
+            </Typography>
+            <Stack spacing={2}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EmailIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
+                <Typography variant="body2">support@homeserviceprovider.com</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PhoneIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
+                <Typography variant="body2">+91 891-234-5678</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'start' }}>
+                <Typography sx={{ mr: 1.5, color: 'primary.main' }}>📍</Typography>
+                <Typography variant="body2">456 Coastal Road, Visakhapatnam, Andhra Pradesh</Typography>
+              </Box>
+            </Stack>
+          </Grid>
+          
+          <Grid item xs={12} sm={4} md={3}>
+            <Typography variant="h6" color="text.primary" gutterBottom>
+              Stay Updated
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Get the latest offers and tips directly in your inbox.
+            </Typography>
+            <Box component="form" onSubmit={handleNewsletterSubmit}>
+              <Stack direction="row">
+                <TextField
+                  placeholder="Your Email"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  error={!!emailError}
+                  helperText={emailError}
+                  sx={{ bgcolor: 'white' }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon sx={{ color: 'text.secondary', ml: 0.5 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { borderTopRightRadius: 0, borderBottomRightRadius: 0 }
+                  }}
+                />
+                <Button 
+                  type="submit" 
+                  variant="contained" 
+                  sx={{ 
+                    borderTopLeftRadius: 0, 
+                    borderBottomLeftRadius: 0, 
+                    boxShadow: 'none',
+                    px: 3,
+                  }}
+                >
+                  Subscribe
+                </Button>
+              </Stack>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <PhoneIcon color="primary" sx={{ mr: 1.5, fontSize: 20 }} />
-              <span>+91 891-234-5678</span>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'start' }}>
-              <Box component="span" sx={{ mr: 1.5, mt: 0.2, color: 'primary.main' }}>📍</Box>
-              <span>456 Coastal Road, Visakhapatnam, Andhra Pradesh</span>
-            </Box>
-          </Stack>
+          </Grid>
         </Grid>
         
-        <Grid item xs={12} sm={4} md={3}>
-          <Typography variant="h6" color="text.primary" gutterBottom>
-            Stay Updated
+        <Divider sx={{ my: 4 }} />
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2">
+            &copy; {new Date().getFullYear()} ServiceHub. All Rights Reserved.
           </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Get the latest offers and tips directly in your inbox.
-          </Typography>
-          <Box component="form" onSubmit={handleNewsletterSubmit}>
-            <Stack direction="row">
-              <TextField
-                placeholder="Your Email"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={!!emailError}
-                helperText={emailError}
-                InputProps={{
-                  startAdornment: (
-                      <InputAdornment position="start">
-                          <EmailIcon sx={{ color: 'text.secondary', ml: 0.5 }} />
-                      </InputAdornment>
-                  ),
-                  sx: {
-                    borderTopRightRadius: 0,
-                    borderBottomRightRadius: 0,
-                  }
-                }}
-              />
-              <Button 
-                type="submit" 
-                variant="contained" 
-                sx={{ 
-                  borderTopLeftRadius: 0, 
-                  borderBottomLeftRadius: 0, 
-                  boxShadow: 'none',
-                  px: 3,
-                }}
-              >
-                Subscribe
-              </Button>
-            </Stack>
-          </Box>
-        </Grid>
-      </Grid>
-      
-      <Divider sx={{ my: { xs: 4, sm: 6 } }} />
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="body2">
-          &copy; {new Date().getFullYear()} ServiceHub. All Rights Reserved.
-        </Typography>
-      </Box>
+        </Box>
+      </Container>
 
       <Snackbar
         open={message.open}
@@ -256,7 +258,7 @@ const FooterComponent = () => {
 
 const Footer = () => {
     return (
-        <ThemeProvider theme={blackTheme}>
+        <ThemeProvider theme={lightFooterTheme}>
             <FooterComponent />
         </ThemeProvider>
     );

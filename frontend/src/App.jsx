@@ -28,7 +28,7 @@ import CustomerMessages from './pages/CustomerMessages';
 import Contact from './components/Contact';
 import FAQ from './components/FAQ';
 import About from './components/About';
-import Footer from './components/Footer';
+// Footer import removed to prevent global rendering
 import PageTransition from './components/PageTransition';
 import { ChatProvider } from './context/ChatContext';
 import ChatWidget from './components/ChatWidget';
@@ -42,17 +42,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { Box, CssBaseline } from '@mui/material';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 
-// --- No changes to FooterWrapper ---
-const FooterWrapper = () => {
-  const location = useLocation();
-  const isAuthenticated = useSelector((state) => !!state.auth.token);
-  const hideFooterRoutes = ['/login', '/register', '/verify-otp'];
-
-  if (!isAuthenticated && hideFooterRoutes.includes(location.pathname)) {
-    return null;
-  }
-  return <Footer />;
-};
+// FooterWrapper removed as per request to move footer to specific components
 
 // --- No changes to AnimatedRoutes ---
 const AnimatedRoutes = () => {
@@ -71,7 +61,7 @@ const AnimatedRoutes = () => {
         <Route path="/providers" element={<PageTransition><ProvidersList /></PageTransition>} />
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         <Route path="/faq" element={<PageTransition><FAQ /></PageTransition>} />
-        <Route path="/about" element={<PageTransition><About /></PageTransition>} />
+        <Route path="/aboutus" element={<PageTransition><About /></PageTransition>} />
         <Route path="/providerhome" element={<ProtectedRoute><PageTransition><ProviderHome /></PageTransition></ProtectedRoute>} />
         <Route path="/provider/dashboard" element={<ProtectedRoute><PageTransition><ProviderDashboard /></PageTransition></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><PageTransition><UserDashboard /></PageTransition></ProtectedRoute>} />
@@ -83,6 +73,7 @@ const AnimatedRoutes = () => {
     </AnimatePresence>
   );
 };
+
 const Layout = ({ children }) => {
   const { loading: isServicesLoading } = useContext(ServicesContext);
 
@@ -92,7 +83,7 @@ const Layout = ({ children }) => {
       <Box sx={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
-      <FooterWrapper />
+      {/* Global FooterWrapper removed from here */}
       {!isServicesLoading && <ChatWidget />}
     </Box>
   );
@@ -144,6 +135,47 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

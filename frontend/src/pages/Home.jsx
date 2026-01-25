@@ -5,7 +5,7 @@ import Carousel from 'react-material-ui-carousel';
 import { ServicesContext } from '../context/ServicesContext';
 import {
   Button, Card, CardActionArea, CardContent, CardMedia, Typography, Box, CircularProgress, Alert, Container, Grid, Paper,
-  Autocomplete, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Skeleton, Avatar, Rating,
+  Autocomplete, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Skeleton, Avatar, Rating, IconButton, Stack, Divider, Link, Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon, ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon, EventAvailable as EventAvailableIcon,
@@ -13,7 +13,8 @@ import {
   Shield as ShieldIcon, SupportAgent as SupportAgentIcon, Payment as PaymentIcon, Percent as PercentIcon, ArrowBack as ArrowBackIcon,
   SentimentVerySatisfied as SentimentVerySatisfiedIcon, CurrencyRupee as CurrencyRupeeIcon, CleanHands as CleanHandsIcon,
   Plumbing as PlumbingIcon, Bolt as BoltIcon, Kitchen as KitchenIcon, FormatPaint as FormatPaintIcon, Carpenter as CarpenterIcon,
-  BugReport as BugReportIcon, Yard as YardIcon, Group as GroupIcon, Handshake as HandshakeIcon, Star as StarIcon
+  BugReport as BugReportIcon, Yard as YardIcon, Group as GroupIcon, Handshake as HandshakeIcon, Star as StarIcon,
+  Facebook, Twitter, LinkedIn, Instagram, Email as EmailIcon, Phone as PhoneIcon, Hub as HubIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import io from 'socket.io-client';
@@ -113,7 +114,7 @@ const HeroSection = ({ handleNavigation }) => (
   <Box component="section" sx={{ 
     background: 'linear-gradient(135deg, #4F46E5, #A855F7, #EC4899)', 
     color: 'white', 
-    py: { xs: 8, md: 12, lg: 15 }, // Responsive vertical padding
+    py: { xs: 8, md: 12, lg: 15 }, 
     textAlign: 'center',
     width: '100%'
   }}>
@@ -377,7 +378,6 @@ const TrustedPartnersSection = () => (
             width: 'max-content' 
           }}
         >
-          {/* Doubling the map ensures the loop is continuous without gaps */}
           {[...partners, ...partners].map((p, i) => (
             <Box 
               key={i} 
@@ -387,8 +387,8 @@ const TrustedPartnersSection = () => (
               sx={{ 
                 height: 50, 
                 mx: 5, 
-                filter: 'none', // Logic to make logos colorful/visible
-                opacity: 1      // Logic to remove the light/faded look
+                filter: 'none', 
+                opacity: 1      
               }} 
             />
           ))}
@@ -397,26 +397,6 @@ const TrustedPartnersSection = () => (
     </Container>
   </Box>
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const Home = () => {
   const navigate = useNavigate();
@@ -427,6 +407,11 @@ const Home = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  
+  // Footer Newsletter State
+  const [email, setEmail] = useState('');
+  const [newsletterMessage, setNewsletterMessage] = useState({ open: false, text: '', severity: 'success' });
+  const [emailError, setEmailError] = useState('');
 
   const { token } = useSelector((state) => state.auth);
 
@@ -469,6 +454,27 @@ const Home = () => {
   const filteredServices = services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory ? s.category === selectedCategory : true));
   const getImageUrl = (image) => image || 'https://via.placeholder.com/400';
 
+  // Newsletter Submit Logic
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    setEmailError('');
+    try {
+      await axios.post(`${API_URL}/api/newsletter`, { email });
+      setNewsletterMessage({ open: true, text: 'Subscribed successfully!', severity: 'success' });
+      setEmail('');
+    } catch (error) {
+      setNewsletterMessage({
+        open: true,
+        text: error.response?.data?.message || 'Error subscribing',
+        severity: 'error'
+      });
+    }
+  };
+
   if (message.open || errorMessage) {
     return (
       <Container sx={{ mt: 15 }}>
@@ -478,24 +484,14 @@ const Home = () => {
   }
 
   return (
-    /* FIXED: Added 'mt' (margin-top) to ensure the entire page starts AFTER the fixed Navbar height */
     <Box component="main" sx={{ 
       bgcolor: 'white', 
-      mt: { xs: '64px', md: '75px', lg: '85px' } // Responsive margin-top to match navbar height
+      mt: { xs: '64px', md: '75px', lg: '85px' } 
     }}>
-      {/* 1. Hero Section - Now starts correctly below Navbar */}
       <HeroSection handleNavigation={handleNavigation} />
-
-      {/* 2. Professional Stats Section */}
       <StatsSection stats={liveStats} />
-
-      {/* 3. Dynamic Marquee */}
       <ServiceMarquee />
-
-      {/* 4. Advantage Cards */}
       <AdvantageSection />
-
-      {/* 5. Explorer Search */}
       <ServiceExplorerSection
         services={services}
         searchQuery={searchQuery}
@@ -503,16 +499,12 @@ const Home = () => {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
       />
-
-      {/* 6. Popular Services Carousel */}
       <FeaturedServicesSection
         featuredServices={filteredServices.slice(0, 5)}
         getImageUrl={getImageUrl}
         handleNavigation={handleNavigation}
         loading={loading}
       />
-
-      {/* 7. Process & Social Proof */}
       <HowItWorksSection />
       <GuaranteesSection />
       <FeedbackSection 
@@ -520,12 +512,8 @@ const Home = () => {
         getImageUrl={getImageUrl} 
         feedbackLoading={feedbackLoading}
       />
-      
       <TrustedPartnersSection />
 
-
-
-      {/* 8. Call to Action */}
       <Box sx={{ py: 12, background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', color: 'white', textAlign: 'center' }}>
         <Container>
           <Typography variant="h3" sx={{ fontWeight: 800, mb: 4 }}>Ready to experience better living?</Typography>
@@ -539,6 +527,62 @@ const Home = () => {
           </Button>
         </Container>
       </Box>
+
+      {/* FOOTER SECTION INTEGRATED BELOW */}
+      <Box component="footer" sx={{ backgroundColor: '#f8f9fa', color: '#5f6368', py: { xs: 5, sm: 8 }, px: { xs: 2, sm: 4 }, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={{ xs: 4, md: 5 }}>
+            <Grid item xs={12} md={4}>
+              <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                <HubIcon sx={{ fontSize: 32, color: '#4F46E5' }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1b' }}>ServiceHub</Typography>
+              </Stack>
+              <Typography variant="body2" sx={{ lineHeight: 1.7, mb: 3 }}>Connecting you with trusted home service professionals in Visakhapatnam for all your needs.</Typography>
+              <Stack direction="row" spacing={1.5}>
+                {[<Twitter />, <Facebook />, <LinkedIn />, <Instagram />].map((icon, idx) => (
+                  <IconButton key={idx} sx={{ color: '#5f6368', '&:hover': { color: '#4F46E5', transform: 'translateY(-3px)' }, transition: 'all 0.3s' }}>{icon}</IconButton>
+                ))}
+              </Stack>
+            </Grid>
+
+            <Grid item xs={6} sm={3} md={2}>
+              <Typography variant="h6" sx={{ color: '#1a1a1b', mb: 2 }}>Navigate</Typography>
+              <Stack spacing={1.5}>
+                {['Services', 'Contact Us', 'About Us', 'FAQ'].map((text) => (
+                  <Link key={text} href="#" onClick={(e) => { e.preventDefault(); handleNavigation(`/${text.toLowerCase().replace(' ', '')}`); }} sx={{ color: 'inherit', textDecoration: 'none', '&:hover': { color: '#4F46E5' } }}>{text}</Link>
+                ))}
+              </Stack>
+            </Grid>
+
+            <Grid item xs={12} sm={5} md={3}>
+              <Typography variant="h6" sx={{ color: '#1a1a1b', mb: 2 }}>Contact Us</Typography>
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}><EmailIcon sx={{ mr: 1.5, fontSize: 20, color: '#4F46E5' }} /><Typography variant="body2">support@homeserviceprovider.com</Typography></Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}><PhoneIcon sx={{ mr: 1.5, fontSize: 20, color: '#4F46E5' }} /><Typography variant="body2">+91 891-234-5678</Typography></Box>
+                <Box sx={{ display: 'flex', alignItems: 'start' }}><Typography sx={{ mr: 1.5, color: '#4F46E5' }}>📍</Typography><Typography variant="body2">456 Coastal Road, Visakhapatnam</Typography></Box>
+              </Stack>
+            </Grid>
+
+            <Grid item xs={12} sm={4} md={3}>
+              <Typography variant="h6" sx={{ color: '#1a1a1b', mb: 2 }}>Stay Updated</Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>Get the latest offers directly in your inbox.</Typography>
+              <Box component="form" onSubmit={handleNewsletterSubmit}>
+                <Stack direction="row">
+                  <TextField placeholder="Email" size="small" fullWidth value={email} onChange={(e) => setEmail(e.target.value)} error={!!emailError} helperText={emailError} sx={{ bgcolor: '#fff' }} InputProps={{ sx: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }} />
+                  <Button type="submit" variant="contained" sx={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, bgcolor: '#4F46E5', boxShadow: 'none' }}>Join</Button>
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
+          <Divider sx={{ my: 4 }} />
+          <Typography variant="body2" align="center">© {new Date().getFullYear()} ServiceHub. All Rights Reserved.</Typography>
+        </Container>
+      </Box>
+
+      {/* Snackbar for Newsletter Feedback */}
+      <Snackbar open={newsletterMessage.open} autoHideDuration={4000} onClose={() => setNewsletterMessage({ ...newsletterMessage, open: false })}>
+        <Alert severity={newsletterMessage.severity} variant="filled" sx={{ width: '100%' }}>{newsletterMessage.text}</Alert>
+      </Snackbar>
     </Box>
   );
 };

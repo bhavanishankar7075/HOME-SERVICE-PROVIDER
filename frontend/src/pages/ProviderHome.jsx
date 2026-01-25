@@ -17,6 +17,8 @@ import {
 import { setUser } from '../redux/authSlice';
 import io from 'socket.io-client';
 import LoadingScreen from '../components/LoadingScreen';
+import Footer from '../components/Footer'
+
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL, { autoConnect: false });
@@ -414,6 +416,7 @@ if (error) {
           </Alert>
         </Snackbar>
       </Container>
+      <Footer/>
     </Box>
   );
 }

@@ -10,6 +10,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BuildIcon from '@mui/icons-material/Build';
 import MoodIcon from '@mui/icons-material/Mood';
+import Footer from './Footer'
+
 
 const About = () => {
   const navigate = useNavigate();
@@ -199,6 +201,7 @@ const About = () => {
           </motion.div>
         </Grid>
       </Grid>
+      <Footer/>
     </Container>
   );
 };

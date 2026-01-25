@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import io from 'socket.io-client';
+import Footer from  './Footer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -159,6 +160,7 @@ const Contact = () => {
           {message.text}
         </Alert>
       </Snackbar>
+      <Footer/>
     </Container>
   );
 };

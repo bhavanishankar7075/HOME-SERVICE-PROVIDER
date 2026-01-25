@@ -22,7 +22,6 @@ import io from 'socket.io-client';
 import { setUser, clearUser, setLocation, clearNotifications } from '../redux/authSlice';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
-import '../styles/ProviderDashboard.css'
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const socket = io(API_URL);
 
