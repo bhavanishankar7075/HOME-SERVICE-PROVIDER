@@ -966,6 +966,22 @@ const Services = () => {
                         alt={service.name}
                         height="200"
                       />
+                      {service.isAvailable === false && (
+                        <Chip
+                          label="Currently Unavailable"
+                          size="small"
+                          sx={{
+                            mt: 1,
+                            bgcolor: "#FEE2E2", // soft red background
+                            color: "#B91C1C", // dark red text
+                            fontWeight: 600,
+                            borderRadius: "999px", // pill shape
+                            px: 1.5,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                          }}
+                        />
+                      )}
+
                       <CardContent sx={{ flexGrow: 1, p: 2 }}>
                         <Box
                           sx={{
@@ -985,14 +1001,6 @@ const Services = () => {
                           >
                             {service.name}
                           </Typography>
-                          {service.isAvailable === false && (
-                            <Chip
-                              label="Currently Unavailable"
-                              color="error"
-                              size="small"
-                              sx={{ mt: 1 }}
-                            />
-                          )}
 
                           <Tooltip title={service.category}>
                             <Avatar
