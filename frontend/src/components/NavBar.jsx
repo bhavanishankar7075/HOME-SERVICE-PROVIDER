@@ -367,7 +367,7 @@ const Navbar = () => {
         borderBottom: '1px solid',
         borderColor: 'divider',
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        zIndex: 1300 // Ensuring Navbar is high enough
+        zIndex: 1200 // Ensuring Navbar is high enough
       }}>
         <Toolbar sx={{ justifyContent: 'space-between', height: '100px', px: { xs: 2, md: 4 } }}>
           
