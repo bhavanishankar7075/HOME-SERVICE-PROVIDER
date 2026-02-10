@@ -17,19 +17,28 @@ import {
   InputAdornment,
   Container,
 } from '@mui/material';
-import { Visibility, VisibilityOff, EmailOutlined, LockOutlined } from '@mui/icons-material';
+import {
+  Visibility,
+  VisibilityOff,
+  EmailOutlined,
+  LockOutlined,
+} from '@mui/icons-material';
 import loginImg from '../assets/login-image.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const NAVBAR_HEIGHT = 72;
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, isLoading, token, needsVerification } = useSelector((state) => state.auth);
+  const { user, isLoading, token, needsVerification } = useSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
     if (user && token) {
@@ -43,18 +52,29 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
+
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       setError('Please enter a valid email address');
       return;
     }
+
     dispatch(setLoading(true));
+
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-      const { token: responseToken, needsVerification: verificationRequired, message } = response.data;
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
+        email,
+        password,
+      });
+
+      const {
+        token: responseToken,
+        needsVerification: verificationRequired,
+      } = response.data;
 
       if (verificationRequired) {
         dispatch(setNeedsVerification(true));
@@ -64,29 +84,33 @@ function Login() {
       const profileRes = await axios.get(`${API_URL}/api/users/profile`, {
         headers: { Authorization: `Bearer ${responseToken}` },
       });
-      const fullUserData = { ...profileRes.data };
 
-      dispatch(setUser({ user: fullUserData, token: responseToken }));
+      dispatch(
+        setUser({ user: { ...profileRes.data }, token: responseToken })
+      );
     } catch (err) {
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Login failed. Please check your credentials.';
-      setError(errorMsg);
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Login failed. Please check your credentials.'
+      );
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  if (user) {
-    return null;
-  }
+  if (user) return null;
 
   return (
     <Box
       sx={{
+        minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
+        pt: `${NAVBAR_HEIGHT}px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 'calc(100vh - 64px)',
         backgroundColor: (theme) => theme.palette.grey[100],
+        overflow: 'hidden',
         px: 2,
       }}
     >
@@ -100,6 +124,7 @@ function Login() {
             overflow: 'hidden',
           }}
         >
+          {/* LEFT IMAGE */}
           <Box
             sx={{
               display: { xs: 'none', md: 'block' },
@@ -108,36 +133,46 @@ function Login() {
               backgroundPosition: 'center',
             }}
           />
+
+          {/* RIGHT FORM */}
           <Box
             sx={{
               p: { xs: 3, sm: 4, md: 6 },
               display: 'flex',
-              flexDirection: 'column',
               justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
-            <Box sx={{ maxWidth: 400, width: '100%', mx: 'auto' }}>
-              <Typography component="h1" variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', textAlign: 'center' }}>
+            <Box sx={{ maxWidth: 400, width: '100%' }}>
+              <Typography
+                variant="h4"
+                fontWeight="bold"
+                color="primary.main"
+                textAlign="center"
+              >
                 ServiceHub
               </Typography>
-              <Typography variant="h6" color="text.secondary" sx={{ mt: 1, mb: 4, textAlign: 'center' }}>
+
+              <Typography
+                variant="h6"
+                color="text.secondary"
+                textAlign="center"
+                sx={{ mt: 1, mb: 2 }}
+              >
                 Welcome Back!
               </Typography>
 
-              {error && (
-                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
+              {/* ✅ RESERVED SPACE — prevents layout jump */}
+              <Box sx={{ minHeight: 56, mb: 2 }}>
+                {error && <Alert severity="error">{error}</Alert>}
+              </Box>
 
-              <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+              <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   margin="normal"
                   required
                   fullWidth
-                  id="email"
                   label="Email Address"
-                  name="email"
                   autoComplete="email"
                   autoFocus
                   value={email}
@@ -145,34 +180,31 @@ function Login() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailOutlined color="action" />
+                        <EmailOutlined />
                       </InputAdornment>
                     ),
                   }}
                 />
+
                 <TextField
                   margin="normal"
                   required
                   fullWidth
-                  name="password"
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlined color="action" />
+                        <LockOutlined />
                       </InputAdornment>
                     ),
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
-                          aria-label="toggle password visibility"
                           onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
@@ -180,6 +212,7 @@ function Login() {
                     ),
                   }}
                 />
+
                 <Button
                   type="submit"
                   fullWidth
@@ -189,26 +222,34 @@ function Login() {
                     mt: 3,
                     mb: 2,
                     py: 1.5,
-                    fontSize: '1rem',
                     fontWeight: 'bold',
-                    bgcolor: 'primary.main',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
-                    },
                   }}
                 >
-                  {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+                  {isLoading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    'Sign In'
+                  )}
                 </Button>
+
                 <Grid container justifyContent="space-between">
                   <Grid item>
-                    <Link component={RouterLink} to="/reset/password" variant="body2" sx={{ color: 'primary.main' }}>
+                    <Link
+                      component={RouterLink}
+                      to="/reset/password"
+                      variant="body2"
+                    >
                       Forgot password?
                     </Link>
                   </Grid>
                   <Grid item>
-                    <Typography variant="body2" color="text.secondary">
-                      Don't have an account?{" "}
-                      <Link component={RouterLink} to="/register" variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    <Typography variant="body2">
+                      Don't have an account?{' '}
+                      <Link
+                        component={RouterLink}
+                        to="/register"
+                        fontWeight="bold"
+                      >
                         Sign Up
                       </Link>
                     </Typography>
